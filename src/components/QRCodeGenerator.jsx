@@ -1,6 +1,8 @@
 import { Copy, Download, RefreshCw, Sparkles, Zap } from "lucide-react";
 import QRCode from "qrcode";
 import React, { useCallback, useRef, useState } from "react";
+import { useTheme } from "../contexts/ThemeContext";
+import { getTranslation } from "../utils/translations";
 
 // Import images
 import img10 from "../img/image copy 10.png";
@@ -21,6 +23,7 @@ import img9 from "../img/image copy 9.png";
 import img1 from "../img/image copy.png";
 
 const QRCodeGenerator = () => {
+  const { language } = useTheme();
   const [qrData, setQrData] = useState("");
   const [qrOptions, setQrOptions] = useState({
     errorCorrectionLevel: "H", // High error correction for logo overlay
@@ -113,18 +116,7 @@ const QRCodeGenerator = () => {
   }, [qrData]);
 
   // AI-powered suggestions for QR code content
-  const suggestions = [
-    "Visit our website: https://example.com",
-    "Contact us: tel:+1234567890",
-    "Email us: mailto:hello@example.com",
-    "WiFi: WIFI:T:WPA;S:MyNetwork;P:password;;",
-    "Send SMS: sms:+1234567890:Hello!",
-    "Location: geo:37.7749,-122.4194",
-    "WhatsApp: https://wa.me/1234567890",
-    "LinkedIn: https://linkedin.com/in/username",
-    "Instagram: https://instagram.com/username",
-    "Twitter: https://twitter.com/username",
-  ];
+  const suggestions = getTranslation(language, "suggestions");
 
   const generateQRCode = useCallback(async () => {
     if (!qrData.trim()) return;
@@ -263,7 +255,7 @@ const QRCodeGenerator = () => {
       }
     } catch (error) {
       console.error("Error generating QR code:", error);
-      alert("Error generating QR code: " + error.message);
+      alert(getTranslation(language, "errorGenerating") + error.message);
     } finally {
       setIsGenerating(false);
     }
@@ -291,10 +283,10 @@ const QRCodeGenerator = () => {
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob }),
       ]);
-      alert("QR code copied to clipboard!");
+      alert(getTranslation(language, "qrCopied"));
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
-      alert("Failed to copy to clipboard");
+      alert(getTranslation(language, "copyFailed"));
     }
   };
 
@@ -324,18 +316,22 @@ const QRCodeGenerator = () => {
     <div className="main-content">
       <div className="controls-section">
         <div className="form-group">
-          <label htmlFor="qr-data">QR Code Content</label>
+          <label htmlFor="qr-data">
+            {getTranslation(language, "qrContent")}
+          </label>
           <textarea
             id="qr-data"
             value={qrData}
             onChange={(e) => setQrData(e.target.value)}
-            placeholder="Enter text, URL, or data to encode..."
+            placeholder={getTranslation(language, "qrContentPlaceholder")}
             rows={3}
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="error-correction">Error Correction Level</label>
+          <label htmlFor="error-correction">
+            {getTranslation(language, "errorCorrection")}
+          </label>
           <select
             id="error-correction"
             value={qrOptions.errorCorrectionLevel}
@@ -343,16 +339,26 @@ const QRCodeGenerator = () => {
               updateOption("errorCorrectionLevel", e.target.value)
             }
           >
-            <option value="L">Low (~7%)</option>
-            <option value="M">Medium (~15%)</option>
-            <option value="Q">Quartile (~25%)</option>
-            <option value="H">High (~30%)</option>
+            <option value="L">
+              {getTranslation(language, "errorLevels.L")}
+            </option>
+            <option value="M">
+              {getTranslation(language, "errorLevels.M")}
+            </option>
+            <option value="Q">
+              {getTranslation(language, "errorLevels.Q")}
+            </option>
+            <option value="H">
+              {getTranslation(language, "errorLevels.H")}
+            </option>
           </select>
         </div>
 
         <div className="color-inputs">
           <div className="color-input-group">
-            <label htmlFor="color-dark">Foreground Color</label>
+            <label htmlFor="color-dark">
+              {getTranslation(language, "foregroundColor")}
+            </label>
             <div className="color-input-wrapper">
               <input
                 type="color"
@@ -371,7 +377,9 @@ const QRCodeGenerator = () => {
           </div>
 
           <div className="color-input-group">
-            <label htmlFor="color-light">Background Color</label>
+            <label htmlFor="color-light">
+              {getTranslation(language, "backgroundColor")}
+            </label>
             <div className="color-input-wrapper">
               <input
                 type="color"
@@ -391,7 +399,9 @@ const QRCodeGenerator = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="size">Size: {qrOptions.width}px</label>
+          <label htmlFor="size">
+            {getTranslation(language, "size")}: {qrOptions.width}px
+          </label>
           <input
             type="range"
             id="size"
@@ -404,7 +414,9 @@ const QRCodeGenerator = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="margin">Margin: {qrOptions.margin}</label>
+          <label htmlFor="margin">
+            {getTranslation(language, "margin")}: {qrOptions.margin}
+          </label>
           <input
             type="range"
             id="margin"
@@ -418,7 +430,7 @@ const QRCodeGenerator = () => {
 
         {/* Image Selector Section */}
         <div className="meme-section">
-          <h3>🖼️ Choose Meme Image</h3>
+          <h3>🖼️ {getTranslation(language, "chooseMemeImage")}</h3>
           {selectedImage && isURL(qrData.trim()) && (
             <div
               style={{
@@ -433,7 +445,8 @@ const QRCodeGenerator = () => {
                 gap: "6px",
               }}
             >
-              ✨ Auto-selected: {selectedImage.name} for your URL!
+              ✨ {getTranslation(language, "autoSelected")}:{" "}
+              {selectedImage.name} {getTranslation(language, "forYourUrl")}
             </div>
           )}
           <div className="meme-controls">
@@ -441,14 +454,16 @@ const QRCodeGenerator = () => {
               className="meme-toggle-btn"
               onClick={() => setShowImageSelector(!showImageSelector)}
             >
-              {showImageSelector ? "Hide Images" : "Show Images"}
+              {showImageSelector
+                ? getTranslation(language, "hideImages")
+                : getTranslation(language, "showImages")}
             </button>
             <button
               className="random-meme-btn"
               onClick={() => setSelectedImage(getRandomImage())}
-              title="Random Image"
+              title={getTranslation(language, "random")}
             >
-              🎲 Random
+              🎲 {getTranslation(language, "random")}
             </button>
           </div>
 
@@ -481,10 +496,12 @@ const QRCodeGenerator = () => {
               <button
                 className={`media-btn ${!selectedImage ? "selected" : ""}`}
                 onClick={() => setSelectedImage(null)}
-                title="No Image"
+                title={getTranslation(language, "none")}
               >
                 <span className="media-emoji">❌</span>
-                <span className="media-name">None</span>
+                <span className="media-name">
+                  {getTranslation(language, "none")}
+                </span>
               </button>
             </div>
           )}
@@ -496,7 +513,7 @@ const QRCodeGenerator = () => {
               size={18}
               style={{ display: "inline", marginRight: "8px" }}
             />
-            AI Suggestions
+            {getTranslation(language, "aiSuggestions")}
           </h3>
           <div className="suggestion-buttons">
             {suggestions.slice(0, 6).map((suggestion, index) => (
@@ -531,7 +548,10 @@ const QRCodeGenerator = () => {
             {selectedImage && (
               <div className="meme-indicator">
                 <Zap size={16} />
-                <span>Enhanced with: {selectedImage.name}</span>
+                <span>
+                  {getTranslation(language, "enhancedWith")}:{" "}
+                  {selectedImage.name}
+                </span>
               </div>
             )}
             {isGenerating && (
@@ -549,7 +569,7 @@ const QRCodeGenerator = () => {
                 }}
               >
                 <RefreshCw className="animate-spin" size={24} />
-                <span>Generating Awesome QR Code...</span>
+                <span>{getTranslation(language, "generating")}</span>
               </div>
             )}
           </div>
@@ -562,7 +582,7 @@ const QRCodeGenerator = () => {
             disabled={!qrCodeUrl}
           >
             <Download size={18} />
-            Download PNG
+            {getTranslation(language, "downloadPng")}
           </button>
 
           <button
@@ -571,7 +591,7 @@ const QRCodeGenerator = () => {
             disabled={!qrCodeUrl}
           >
             <Copy size={18} />
-            Copy to Clipboard
+            {getTranslation(language, "copyToClipboard")}
           </button>
         </div>
 
@@ -579,17 +599,15 @@ const QRCodeGenerator = () => {
           style={{
             marginTop: "20px",
             fontSize: "0.9rem",
-            color: "#666",
+            color: "var(--text-secondary)",
             textAlign: "center",
           }}
         >
-          <p>✨ Features:</p>
+          <p>✨ {getTranslation(language, "features")}:</p>
           <ul style={{ listStyle: "none", padding: 0, margin: "10px 0" }}>
-            <li>• Customizable colors and sizes</li>
-            <li>• Multiple error correction levels</li>
-            <li>• AI-powered content suggestions</li>
-            <li>• High-quality PNG export</li>
-            <li>• Copy to clipboard support</li>
+            {getTranslation(language, "featuresList").map((feature, index) => (
+              <li key={index}>• {feature}</li>
+            ))}
           </ul>
         </div>
       </div>
