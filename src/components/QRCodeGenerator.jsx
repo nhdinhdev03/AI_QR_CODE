@@ -102,18 +102,34 @@ const QRCodeGenerator = () => {
     }
   };
 
-  // Auto random image when URL is detected (only when it first becomes a URL)
+  // Auto show image gallery and random image when URL is detected
   React.useEffect(() => {
     const text = qrData.trim();
     const nowIsUrl = !!text && isURL(text);
-    if (nowIsUrl && !prevIsUrlRef.current) {
-      const randomImage = getRandomImage();
-      setSelectedImage(randomImage);
+
+    console.log("URL Detection:", { text, nowIsUrl, showImageSelector });
+
+    if (nowIsUrl) {
+      console.log("URL detected - showing gallery");
+      // Luôn hiển thị gallery khi có URL (ngay lập tức)
       setShowImageSelector(true);
-      setTriggerGeneration((prev) => prev + 1);
+
+      // Chỉ random ảnh mới khi lần đầu phát hiện URL hoặc chưa có ảnh nào được chọn
+      if (!prevIsUrlRef.current || !selectedImage) {
+        const randomImage = getRandomImage();
+        console.log("Auto-selecting random image:", randomImage.name);
+        setSelectedImage(randomImage);
+        setTriggerGeneration((prev) => prev + 1);
+      }
+    } else if (!nowIsUrl && text === "") {
+      console.log("No URL - hiding gallery");
+      // Khi xóa hết text, reset về trạng thái ban đầu
+      setShowImageSelector(false);
+      setSelectedImage(null);
     }
+
     prevIsUrlRef.current = nowIsUrl;
-  }, [qrData]);
+  }, [qrData, selectedImage]);
 
   // Debounced QR generation - faster for URLs, slower for other content
   React.useEffect(() => {
@@ -464,6 +480,26 @@ const QRCodeGenerator = () => {
         {/* Image Selector Section */}
         <div className="meme-section">
           <h3>🖼️ {getTranslation(language, "chooseMemeImage")}</h3>
+
+          {/* Thông báo khi phát hiện URL */}
+          {isURL(qrData.trim()) && showImageSelector && (
+            <div
+              style={{
+                background: "linear-gradient(45deg, #3b82f6, #1d4ed8)",
+                color: "white",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                fontSize: "0.8rem",
+                marginBottom: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              {getTranslation(language, "urlDetected")}
+            </div>
+          )}
+
           {selectedImage && isURL(qrData.trim()) && (
             <div
               style={{
