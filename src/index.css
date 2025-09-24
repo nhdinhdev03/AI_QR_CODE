@@ -684,17 +684,21 @@ body {
 }
 
 .qr-canvas-display {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
+  max-width: 300px;
+  max-height: 300px;
+  min-width: 200px;
+  min-height: 200px;
 }
 
 .qr-canvas-display:hover {
   transform: scale(1.02);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 8px 20px var(--shadow-medium) !important;
 }
 
 .qr-canvas-display.generating {
-  animation: shake 0.5s ease-in-out;
+  opacity: 0.7;
 }
 
 .meme-indicator {

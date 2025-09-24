@@ -115,11 +115,31 @@ const QRCodeGenerator = () => {
     prevIsUrlRef.current = nowIsUrl;
   }, [qrData]);
 
+  // Debounced QR generation - faster for URLs, slower for other content
+  React.useEffect(() => {
+    if (!qrData.trim()) {
+      setQrCodeUrl("");
+      return;
+    }
+
+    // Generate faster for URLs, slower for other content
+    const delay = isURL(qrData.trim()) ? 200 : 800;
+
+    const timer = setTimeout(() => {
+      setTriggerGeneration((prev) => prev + 1);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [qrData]);
+
   // Suggestions for QR code content
   const suggestions = getTranslation(language, "suggestions");
 
   const generateQRCode = useCallback(async () => {
-    if (!qrData.trim()) return;
+    if (!qrData.trim()) {
+      setQrCodeUrl("");
+      return;
+    }
 
     console.log("Generating QR Code with data:", qrData);
     console.log("Selected image:", selectedImage);
@@ -323,6 +343,19 @@ const QRCodeGenerator = () => {
             id="qr-data"
             value={qrData}
             onChange={(e) => setQrData(e.target.value)}
+            onBlur={() => {
+              // Generate immediately when user finishes typing
+              if (qrData.trim()) {
+                setTriggerGeneration((prev) => prev + 1);
+              }
+            }}
+            onKeyDown={(e) => {
+              // Generate immediately on Enter
+              if (e.key === "Enter" && !e.shiftKey && qrData.trim()) {
+                e.preventDefault();
+                setTriggerGeneration((prev) => prev + 1);
+              }
+            }}
             placeholder={getTranslation(language, "qrContentPlaceholder")}
             rows={3}
           />
@@ -534,6 +567,27 @@ const QRCodeGenerator = () => {
         <div className="qr-preview">
           <div className="qr-canvas-container" style={{ position: "relative" }}>
             <canvas ref={canvasRef} style={{ display: "none" }} />
+
+            {!qrData.trim() && (
+              <div
+                style={{
+                  width: "300px",
+                  height: "300px",
+                  border: "2px dashed var(--border-color)",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--text-secondary)",
+                  fontSize: "0.9rem",
+                  textAlign: "center",
+                  padding: "20px",
+                }}
+              >
+                Nhập nội dung để tạo mã QR
+              </div>
+            )}
+
             <canvas
               ref={overlayCanvasRef}
               className="qr-canvas-display"
@@ -541,8 +595,9 @@ const QRCodeGenerator = () => {
                 maxWidth: "100%",
                 height: "auto",
                 borderRadius: "12px",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                transition: "all 0.3s ease",
+                boxShadow: "0 4px 12px var(--shadow-light)",
+                transition: "all 0.2s ease",
+                display: qrData.trim() ? "block" : "none",
               }}
             />
             {selectedImage && (
