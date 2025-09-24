@@ -61,6 +61,40 @@ const QRCodeGenerator = () => {
     { content: img16, name: "Meme 16" },
   ];
 
+  // Function to get random image
+  const getRandomImage = () => {
+    return imageCollection[Math.floor(Math.random() * imageCollection.length)];
+  };
+
+  // Function to check if text is a URL
+  const isURL = (text) => {
+    try {
+      new URL(text);
+      return true;
+    } catch {
+      const lowerText = text.toLowerCase().trim();
+      return (
+        lowerText.includes("http") ||
+        lowerText.includes("www.") ||
+        lowerText.includes(".com") ||
+        lowerText.includes(".net") ||
+        lowerText.includes(".org") ||
+        lowerText.includes(".io") ||
+        lowerText.includes(".co")
+      );
+    }
+  };
+
+  // Auto random image when URL is detected
+  React.useEffect(() => {
+    if (qrData.trim() && isURL(qrData.trim())) {
+      // Random image ngay lập tức và mở image selector để user thấy
+      const randomImage = getRandomImage();
+      setSelectedImage(randomImage);
+      setShowImageSelector(true); // Mở selector để user thấy ảnh được chọn
+    }
+  }, [qrData]);
+
   // AI-powered suggestions for QR code content
   const suggestions = [
     "Visit our website: https://example.com",
@@ -160,22 +194,33 @@ const QRCodeGenerator = () => {
           // Update QR code URL after image is loaded
           const url = overlayCanvas.toDataURL();
           setQrCodeUrl(url);
+
+          // Add success animation after image is loaded
+          setTimeout(() => {
+            if (overlayCanvas) {
+              overlayCanvas.className = "qr-canvas-display new-generated";
+              setTimeout(() => {
+                overlayCanvas.className = "qr-canvas-display";
+              }, 600);
+            }
+          }, 100);
         };
         img.src = selectedImage.content;
+      } else {
+        // No image selected, just set the QR code URL
+        const url = overlayCanvas.toDataURL();
+        setQrCodeUrl(url);
+
+        // Add success animation
+        setTimeout(() => {
+          if (overlayCanvas) {
+            overlayCanvas.className = "qr-canvas-display new-generated";
+            setTimeout(() => {
+              overlayCanvas.className = "qr-canvas-display";
+            }, 600);
+          }
+        }, 100);
       }
-
-      const url = overlayCanvas.toDataURL();
-      setQrCodeUrl(url);
-
-      // Add success animation
-      setTimeout(() => {
-        if (overlayCanvas) {
-          overlayCanvas.className = "qr-canvas-display new-generated";
-          setTimeout(() => {
-            overlayCanvas.className = "qr-canvas-display";
-          }, 600);
-        }
-      }, 100);
     } catch (error) {
       console.error("Error generating QR code:", error);
     } finally {
@@ -331,6 +376,23 @@ const QRCodeGenerator = () => {
         {/* Image Selector Section */}
         <div className="meme-section">
           <h3>🖼️ Choose Meme Image</h3>
+          {selectedImage && isURL(qrData.trim()) && (
+            <div
+              style={{
+                background: "linear-gradient(45deg, #4ecdc4, #44a08d)",
+                color: "white",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                fontSize: "0.8rem",
+                marginBottom: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              ✨ Auto-selected: {selectedImage.name} for your URL!
+            </div>
+          )}
           <div className="meme-controls">
             <button
               className="meme-toggle-btn"
@@ -340,13 +402,7 @@ const QRCodeGenerator = () => {
             </button>
             <button
               className="random-meme-btn"
-              onClick={() => {
-                const randomImage =
-                  imageCollection[
-                    Math.floor(Math.random() * imageCollection.length)
-                  ];
-                setSelectedImage(randomImage);
-              }}
+              onClick={() => setSelectedImage(getRandomImage())}
               title="Random Image"
             >
               🎲 Random
