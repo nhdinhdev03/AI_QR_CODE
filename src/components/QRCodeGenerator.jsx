@@ -56,6 +56,8 @@ const QRCodeGenerator = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [triggerGeneration, setTriggerGeneration] = useState(0);
+  const [validationMessage, setValidationMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
@@ -113,6 +115,62 @@ const QRCodeGenerator = () => {
     return imageCollection[Math.floor(Math.random() * imageCollection.length)];
   };
 
+  // Validation functions for different content types
+  const validateContent = (text) => {
+    if (!text || !text.trim()) {
+      setErrorMessage(getTranslation(language, "errors.emptyContent"));
+      setValidationMessage("");
+      return { isValid: false, type: "empty" };
+    }
+
+    if (text.length > 2000) {
+      setErrorMessage(getTranslation(language, "errors.contentTooLong"));
+      setValidationMessage("");
+      return { isValid: false, type: "tooLong" };
+    }
+
+    setErrorMessage("");
+
+    // Check different content types
+    if (isURL(text)) {
+      setValidationMessage(getTranslation(language, "validation.urlDetected"));
+      return { isValid: true, type: "url" };
+    }
+
+    if (isEmail(text)) {
+      setValidationMessage(
+        getTranslation(language, "validation.emailDetected")
+      );
+      return { isValid: true, type: "email" };
+    }
+
+    if (isPhone(text)) {
+      setValidationMessage(
+        getTranslation(language, "validation.phoneDetected")
+      );
+      return { isValid: true, type: "phone" };
+    }
+
+    if (isSMS(text)) {
+      setValidationMessage(getTranslation(language, "validation.smsDetected"));
+      return { isValid: true, type: "sms" };
+    }
+
+    if (isWiFi(text)) {
+      setValidationMessage(getTranslation(language, "validation.wifiDetected"));
+      return { isValid: true, type: "wifi" };
+    }
+
+    if (isGeo(text)) {
+      setValidationMessage(getTranslation(language, "validation.geoDetected"));
+      return { isValid: true, type: "geo" };
+    }
+
+    // Valid content but no specific type detected
+    setValidationMessage("");
+    return { isValid: true, type: "text" };
+  };
+
   // Function to check if text is a URL
   const isURL = (text) => {
     try {
@@ -132,28 +190,119 @@ const QRCodeGenerator = () => {
     }
   };
 
-  // Auto random image when URL is detected (tự động random ảnh khi có URL)
-  React.useEffect(() => {
-    const text = qrData.trim();
-    const nowIsUrl = !!text && isURL(text);
+  // Function to check if text is an email
+  const isEmail = (text) => {
+    if (!text) return false;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(text) || text.startsWith("mailto:");
+  };
 
-    if (nowIsUrl) {
-      // Ẩn gallery và tự động random ảnh khi phát hiện URL
-      setShowImageSelector(false);
+  // Function to check if text is a phone number
+  const isPhone = (text) => {
+    if (!text) return false;
+    const phonePattern =
+      /^(\+?[1-9]\d{0,3})?[-.\s]?\(?[0-9]{1,4}\)?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,9}$/;
+    return phonePattern.test(text) || text.startsWith("tel:");
+  };
 
-      // Chỉ random ảnh mới khi lần đầu phát hiện URL
-      if (!prevIsUrlRef.current) {
-        const randomImage = getRandomImage();
-        setSelectedImage(randomImage);
-        setTriggerGeneration((prev) => prev + 1);
-      }
-    } else if (text === "") {
-      // Khi xóa hết text, reset về trạng thái ban đầu
-      setShowImageSelector(false);
-      setSelectedImage(null);
+  // Function to check if text is SMS format
+  const isSMS = (text) => {
+    if (!text) return false;
+    const smsPattern = /^sms:[+]?[0-9]+(:.*)?$/;
+    return smsPattern.test(text);
+  };
+
+  // Function to check if text is WiFi format
+  const isWiFi = (text) => {
+    if (!text) return false;
+    const wifiPattern = /^WIFI:T:[^;]*;S:[^;]*;P:[^;]*;H?:[^;]*;?$/i;
+    return wifiPattern.test(text);
+  };
+
+  // Function to check if text is geo location
+  const isGeo = (text) => {
+    if (!text) return false;
+    const geoPattern =
+      /^geo:[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$/;
+    return geoPattern.test(text);
+  };
+
+  // Function to get content examples based on error type
+  const getContentExample = (errorMessage) => {
+    const examples = {
+      en: {
+        invalidUrl: "https://example.com",
+        invalidEmail: "user@example.com",
+        invalidPhone: "+1234567890",
+        invalidSms: "sms:+1234567890:Hello!",
+        invalidWifi: "WIFI:T:WPA;S:MyNetwork;P:password;;",
+        invalidGeo: "geo:37.7749,-122.4194",
+      },
+      vi: {
+        invalidUrl: "https://example.com",
+        invalidEmail: "user@example.com",
+        invalidPhone: "+84987654321",
+        invalidSms: "sms:+84987654321:Xin chào!",
+        invalidWifi: "WIFI:T:WPA;S:MyNetwork;P:matkhau;;",
+        invalidGeo: "geo:21.0285,105.8542",
+      },
+    };
+
+    const langExamples = examples[language] || examples.en;
+
+    if (errorMessage.includes("URL")) {
+      return ` Ví dụ: ${langExamples.invalidUrl}`;
+    } else if (errorMessage.includes("email")) {
+      return ` Ví dụ: ${langExamples.invalidEmail}`;
+    } else if (
+      errorMessage.includes("phone") ||
+      errorMessage.includes("số điện thoại")
+    ) {
+      return ` Ví dụ: ${langExamples.invalidPhone}`;
+    } else if (errorMessage.includes("SMS")) {
+      return ` Ví dụ: ${langExamples.invalidSms}`;
+    } else if (errorMessage.includes("WiFi")) {
+      return ` Ví dụ: ${langExamples.invalidWifi}`;
+    } else if (
+      errorMessage.includes("location") ||
+      errorMessage.includes("vị trí")
+    ) {
+      return ` Ví dụ: ${langExamples.invalidGeo}`;
     }
 
-    prevIsUrlRef.current = nowIsUrl;
+    return "";
+  };
+
+  // Auto validation and image selection when content changes
+  React.useEffect(() => {
+    const text = qrData.trim();
+
+    // Validate content and show appropriate messages
+    if (text) {
+      const validation = validateContent(text);
+      const nowIsUrl = validation.type === "url";
+
+      if (nowIsUrl) {
+        // Ẩn gallery và tự động random ảnh khi phát hiện URL
+        setShowImageSelector(false);
+
+        // Chỉ random ảnh mới khi lần đầu phát hiện URL
+        if (!prevIsUrlRef.current) {
+          const randomImage = getRandomImage();
+          setSelectedImage(randomImage);
+          setTriggerGeneration((prev) => prev + 1);
+        }
+      }
+
+      prevIsUrlRef.current = nowIsUrl;
+    } else {
+      // Khi xóa hết text, reset về trạng thái ban đầu
+      setErrorMessage("");
+      setValidationMessage("");
+      setShowImageSelector(false);
+      setSelectedImage(null);
+      prevIsUrlRef.current = false;
+    }
   }, [qrData]);
 
   // Debounced QR generation - faster for URLs, slower for other content
@@ -180,6 +329,12 @@ const QRCodeGenerator = () => {
     if (!qrData.trim()) {
       setQrCodeUrl("");
       return;
+    }
+
+    // Validate content before generating
+    const validation = validateContent(qrData);
+    if (!validation.isValid) {
+      return; // Error message already set by validateContent
     }
 
     console.log("Generating QR Code with data:", qrData);
@@ -287,7 +442,28 @@ const QRCodeGenerator = () => {
       }
     } catch (error) {
       console.error("Error generating QR code:", error);
-      alert(getTranslation(language, "errorGenerating") + error.message);
+
+      // Show specific error messages based on error type
+      let errorMessage;
+      if (error.message.includes("canvas")) {
+        errorMessage = getTranslation(language, "errors.canvasError");
+      } else if (
+        error.message.includes("network") ||
+        error.message.includes("fetch")
+      ) {
+        errorMessage = getTranslation(language, "errors.networkError");
+      } else if (
+        error.message.includes("too large") ||
+        error.message.includes("too long")
+      ) {
+        errorMessage = getTranslation(language, "errors.contentTooLong");
+      } else {
+        errorMessage =
+          getTranslation(language, "errorGenerating") + error.message;
+      }
+
+      setErrorMessage(errorMessage);
+      alert(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -310,7 +486,16 @@ const QRCodeGenerator = () => {
     if (!qrCodeUrl) return;
 
     try {
+      // Check if clipboard API is supported
+      if (!navigator.clipboard) {
+        throw new Error(getTranslation(language, "errors.unsupportedBrowser"));
+      }
+
       const response = await fetch(qrCodeUrl);
+      if (!response.ok) {
+        throw new Error(getTranslation(language, "errors.networkError"));
+      }
+
       const blob = await response.blob();
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob }),
@@ -318,7 +503,23 @@ const QRCodeGenerator = () => {
       alert(getTranslation(language, "qrCopied"));
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
-      alert(getTranslation(language, "copyFailed"));
+
+      let errorMessage;
+      if (
+        error.message.includes("unsupported") ||
+        error.message.includes("not supported")
+      ) {
+        errorMessage = getTranslation(language, "errors.unsupportedBrowser");
+      } else if (
+        error.message.includes("network") ||
+        error.message.includes("fetch")
+      ) {
+        errorMessage = getTranslation(language, "errors.networkError");
+      } else {
+        errorMessage = getTranslation(language, "copyFailed");
+      }
+
+      alert(errorMessage);
     }
   };
 
@@ -371,6 +572,19 @@ const QRCodeGenerator = () => {
             placeholder={getTranslation(language, "qrContentPlaceholder")}
             rows={3}
           />
+
+          {/* Validation and Error Messages */}
+          {validationMessage && (
+            <div className="validation-message success">
+              {validationMessage}
+            </div>
+          )}
+          {errorMessage && (
+            <div className="validation-message error">
+              {errorMessage}
+              {getContentExample(errorMessage)}
+            </div>
+          )}
         </div>
 
         <div className="form-group">

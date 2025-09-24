@@ -67,6 +67,34 @@ export const translations = {
     qrCopied: "QR code copied to clipboard!",
     copyFailed: "Failed to copy to clipboard",
     errorGenerating: "Error generating QR code: ",
+
+    // Error messages
+    errors: {
+      invalidUrl:
+        "Invalid URL format. Please enter a valid URL starting with http:// or https://",
+      invalidEmail: "Invalid email format. Please enter a valid email address",
+      invalidPhone:
+        "Invalid phone number format. Please enter a valid phone number",
+      invalidSms: "Invalid SMS format. Use: sms:+1234567890:Your message",
+      invalidWifi:
+        "Invalid WiFi format. Use: WIFI:T:WPA;S:NetworkName;P:password;;",
+      invalidGeo: "Invalid location format. Use: geo:latitude,longitude",
+      emptyContent: "Please enter content to generate QR code",
+      contentTooLong: "Content is too long for QR code generation",
+      unsupportedBrowser: "Your browser doesn't support this feature",
+      networkError: "Network error. Please check your connection",
+      canvasError: "Canvas rendering error. Please try again",
+    },
+
+    // Validation messages
+    validation: {
+      urlDetected: "Valid URL detected",
+      emailDetected: " Valid email detected",
+      phoneDetected: " Valid phone number detected",
+      smsDetected: " Valid SMS format detected",
+      wifiDetected: " Valid WiFi configuration detected",
+      geoDetected: " Valid location coordinates detected",
+    },
   },
 
   vi: {
@@ -136,6 +164,36 @@ export const translations = {
     qrCopied: "Đã sao chép mã QR vào clipboard!",
     copyFailed: "Không thể sao chép vào clipboard",
     errorGenerating: "Lỗi tạo mã QR: ",
+
+    // Error messages
+    errors: {
+      invalidUrl:
+        "Định dạng URL không hợp lệ. Vui lòng nhập URL hợp lệ bắt đầu bằng http:// hoặc https://",
+      invalidEmail:
+        "Định dạng email không hợp lệ. Vui lòng nhập địa chỉ email hợp lệ",
+      invalidPhone:
+        "Định dạng số điện thoại không hợp lệ. Vui lòng nhập số điện thoại hợp lệ",
+      invalidSms:
+        "Định dạng SMS không hợp lệ. Sử dụng: sms:+1234567890:Tin nhắn của bạn",
+      invalidWifi:
+        "Định dạng WiFi không hợp lệ. Sử dụng: WIFI:T:WPA;S:TênMạng;P:mật khẩu;;",
+      invalidGeo: "Định dạng vị trí không hợp lệ. Sử dụng: geo:vĩ độ,kinh độ",
+      emptyContent: "Vui lòng nhập nội dung để tạo mã QR",
+      contentTooLong: "Nội dung quá dài để tạo mã QR",
+      unsupportedBrowser: "Trình duyệt của bạn không hỗ trợ tính năng này",
+      networkError: "Lỗi mạng. Vui lòng kiểm tra kết nối",
+      canvasError: "Lỗi hiển thị canvas. Vui lòng thử lại",
+    },
+
+    // Validation messages
+    validation: {
+      urlDetected: "✅ Phát hiện URL hợp lệ",
+      emailDetected: "✅ Phát hiện email hợp lệ",
+      phoneDetected: "✅ Phát hiện số điện thoại hợp lệ",
+      smsDetected: "✅ Phát hiện định dạng SMS hợp lệ",
+      wifiDetected: "✅ Phát hiện cấu hình WiFi hợp lệ",
+      geoDetected: "✅ Phát hiện tọa độ vị trí hợp lệ",
+    },
   },
 };
 
