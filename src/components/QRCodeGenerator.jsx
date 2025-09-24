@@ -12,8 +12,22 @@ import img13 from "../img/image copy 13.png";
 import img14 from "../img/image copy 14.png";
 import img15 from "../img/image copy 15.png";
 import img16 from "../img/image copy 16.png";
+import img17 from "../img/image copy 17.png";
+import img18 from "../img/image copy 18.png";
+import img19 from "../img/image copy 19.png";
 import img2 from "../img/image copy 2.png";
+import img20 from "../img/image copy 20.png";
+import img21 from "../img/image copy 21.png";
+import img22 from "../img/image copy 22.png";
+import img23 from "../img/image copy 23.png";
+import img24 from "../img/image copy 24.png";
+import img25 from "../img/image copy 25.png";
+import img26 from "../img/image copy 26.png";
+import img27 from "../img/image copy 27.png";
+import img28 from "../img/image copy 28.png";
+import img29 from "../img/image copy 29.png";
 import img3 from "../img/image copy 3.png";
+import img30 from "../img/image copy 30.png";
 import img4 from "../img/image copy 4.png";
 import img5 from "../img/image copy 5.png";
 import img6 from "../img/image copy 6.png";
@@ -21,6 +35,7 @@ import img7 from "../img/image copy 7.png";
 import img8 from "../img/image copy 8.png";
 import img9 from "../img/image copy 9.png";
 import img1 from "../img/image copy.png";
+import imgMain from "../img/image.png";
 
 const QRCodeGenerator = () => {
   const { language } = useTheme();
@@ -58,7 +73,7 @@ const QRCodeGenerator = () => {
     }, delay);
   };
 
-  // Image collection - chỉ có hình ảnh, không có emoji
+  // Image collection - tất cả 31 ảnh có sẵn
   const imageCollection = [
     { content: img1, name: "Meme 1" },
     { content: img2, name: "Meme 2" },
@@ -76,6 +91,21 @@ const QRCodeGenerator = () => {
     { content: img14, name: "Meme 14" },
     { content: img15, name: "Meme 15" },
     { content: img16, name: "Meme 16" },
+    { content: img17, name: "Meme 17" },
+    { content: img18, name: "Meme 18" },
+    { content: img19, name: "Meme 19" },
+    { content: img20, name: "Meme 20" },
+    { content: img21, name: "Meme 21" },
+    { content: img22, name: "Meme 22" },
+    { content: img23, name: "Meme 23" },
+    { content: img24, name: "Meme 24" },
+    { content: img25, name: "Meme 25" },
+    { content: img26, name: "Meme 26" },
+    { content: img27, name: "Meme 27" },
+    { content: img28, name: "Meme 28" },
+    { content: img29, name: "Meme 29" },
+    { content: img30, name: "Meme 30" },
+    { content: imgMain, name: "Meme 31" },
   ];
 
   // Function to get random image
@@ -102,34 +132,29 @@ const QRCodeGenerator = () => {
     }
   };
 
-  // Auto show image gallery and random image when URL is detected
+  // Auto random image when URL is detected (tự động random ảnh khi có URL)
   React.useEffect(() => {
     const text = qrData.trim();
     const nowIsUrl = !!text && isURL(text);
 
-    console.log("URL Detection:", { text, nowIsUrl, showImageSelector });
-
     if (nowIsUrl) {
-      console.log("URL detected - showing gallery");
-      // Luôn hiển thị gallery khi có URL (ngay lập tức)
-      setShowImageSelector(true);
+      // Ẩn gallery và tự động random ảnh khi phát hiện URL
+      setShowImageSelector(false);
 
-      // Chỉ random ảnh mới khi lần đầu phát hiện URL hoặc chưa có ảnh nào được chọn
-      if (!prevIsUrlRef.current || !selectedImage) {
+      // Chỉ random ảnh mới khi lần đầu phát hiện URL
+      if (!prevIsUrlRef.current) {
         const randomImage = getRandomImage();
-        console.log("Auto-selecting random image:", randomImage.name);
         setSelectedImage(randomImage);
         setTriggerGeneration((prev) => prev + 1);
       }
-    } else if (!nowIsUrl && text === "") {
-      console.log("No URL - hiding gallery");
+    } else if (text === "") {
       // Khi xóa hết text, reset về trạng thái ban đầu
       setShowImageSelector(false);
       setSelectedImage(null);
     }
 
     prevIsUrlRef.current = nowIsUrl;
-  }, [qrData, selectedImage]);
+  }, [qrData]);
 
   // Debounced QR generation - faster for URLs, slower for other content
   React.useEffect(() => {
@@ -482,42 +507,7 @@ const QRCodeGenerator = () => {
           <h3>🖼️ {getTranslation(language, "chooseMemeImage")}</h3>
 
           {/* Thông báo khi phát hiện URL */}
-          {isURL(qrData.trim()) && showImageSelector && (
-            <div
-              style={{
-                background: "linear-gradient(45deg, #3b82f6, #1d4ed8)",
-                color: "white",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                fontSize: "0.8rem",
-                marginBottom: "10px",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              {getTranslation(language, "urlDetected")}
-            </div>
-          )}
 
-          {selectedImage && isURL(qrData.trim()) && (
-            <div
-              style={{
-                background: "linear-gradient(45deg, #4ecdc4, #44a08d)",
-                color: "white",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                fontSize: "0.8rem",
-                marginBottom: "10px",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              ✨ {getTranslation(language, "autoSelected")}:{" "}
-              {selectedImage.name} {getTranslation(language, "forYourUrl")}
-            </div>
-          )}
           <div className="meme-controls">
             <button
               className="meme-toggle-btn"
