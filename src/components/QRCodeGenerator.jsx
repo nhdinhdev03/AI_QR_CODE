@@ -1,11 +1,11 @@
-import { Copy, Download, RefreshCw, Sparkles } from "lucide-react";
+import { Copy, Download, RefreshCw, Smile, Sparkles, Zap } from "lucide-react";
 import QRCode from "qrcode";
 import React, { useCallback, useRef, useState } from "react";
 
 const QRCodeGenerator = () => {
   const [qrData, setQrData] = useState("Hello, World! 🌍");
   const [qrOptions, setQrOptions] = useState({
-    errorCorrectionLevel: "M",
+    errorCorrectionLevel: "H", // High error correction for logo overlay
     type: "image/png",
     quality: 0.92,
     margin: 1,
@@ -13,11 +13,48 @@ const QRCodeGenerator = () => {
       dark: "#000000",
       light: "#FFFFFF",
     },
-    width: 256,
+    width: 300,
   });
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedMeme, setSelectedMeme] = useState("😎");
+  const [showMemeSelector, setShowMemeSelector] = useState(false);
   const canvasRef = useRef(null);
+  const overlayCanvasRef = useRef(null);
+
+  // Meme collection for QR code center
+  const memeCollection = [
+    { emoji: "😎", name: "Too Cool", category: "face" },
+    { emoji: "🤣", name: "ROFL", category: "face" },
+    { emoji: "🔥", name: "Lit AF", category: "object" },
+    { emoji: "💎", name: "Diamond Hands", category: "object" },
+    { emoji: "🚀", name: "To the Moon", category: "object" },
+    { emoji: "⚡", name: "Zap Zap", category: "object" },
+    { emoji: "🎉", name: "Party Time", category: "object" },
+    { emoji: "💀", name: "Dead Inside", category: "face" },
+    { emoji: "🤖", name: "Beep Boop", category: "face" },
+    { emoji: "👑", name: "King/Queen", category: "object" },
+    { emoji: "🌟", name: "Shiny", category: "object" },
+    { emoji: "🎯", name: "On Target", category: "object" },
+    { emoji: "💯", name: "Keep it 100", category: "object" },
+    { emoji: "🎭", name: "Drama Queen", category: "object" },
+    { emoji: "🎪", name: "Circus Life", category: "object" },
+    { emoji: "🦄", name: "Unicorn Vibes", category: "animal" },
+    { emoji: "🐱‍💻", name: "Code Cat", category: "animal" },
+    { emoji: "🐸", name: "Pepe Vibes", category: "animal" },
+    { emoji: "🦖", name: "Dino Mode", category: "animal" },
+    { emoji: "👻", name: "Spooky Boi", category: "face" },
+    { emoji: "🤡", name: "Clown World", category: "face" },
+    { emoji: "🧠", name: "Big Brain", category: "face" },
+    { emoji: "🍕", name: "Pizza Time", category: "food" },
+    { emoji: "☕", name: "Caffeine", category: "food" },
+    { emoji: "🌮", name: "Taco Tuesday", category: "food" },
+    { emoji: "🎮", name: "Gamer Mode", category: "object" },
+    { emoji: "📱", name: "Phone Life", category: "object" },
+    { emoji: "💻", name: "Dev Life", category: "object" },
+    { emoji: "🏆", name: "Winner", category: "object" },
+    { emoji: "🦾", name: "Cyborg", category: "object" },
+  ];
 
   // AI-powered suggestions for QR code content
   const suggestions = [
@@ -37,17 +74,86 @@ const QRCodeGenerator = () => {
     if (!qrData.trim()) return;
 
     setIsGenerating(true);
+
+    // Add generating animation
+    const overlayCanvas = overlayCanvasRef.current;
+    if (overlayCanvas) {
+      overlayCanvas.className = "qr-canvas-display generating";
+    }
+
     try {
       const canvas = canvasRef.current;
+
+      // Generate basic QR code
       await QRCode.toCanvas(canvas, qrData, qrOptions);
-      const url = canvas.toDataURL();
+
+      // Create overlay canvas for meme
+      const overlayCtx = overlayCanvas.getContext("2d");
+
+      // Copy original QR code to overlay canvas
+      overlayCanvas.width = canvas.width;
+      overlayCanvas.height = canvas.height;
+      overlayCtx.drawImage(canvas, 0, 0);
+
+      // Add meme emoji in the center
+      if (selectedMeme) {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const emojiSize = Math.min(canvas.width, canvas.height) * 0.15; // 15% of canvas size
+
+        // Create white background circle for emoji with gradient
+        const gradient = overlayCtx.createRadialGradient(
+          centerX,
+          centerY,
+          0,
+          centerX,
+          centerY,
+          emojiSize * 0.8
+        );
+        gradient.addColorStop(0, qrOptions.color.light);
+        gradient.addColorStop(0.7, qrOptions.color.light);
+        gradient.addColorStop(1, "rgba(255,255,255,0.8)");
+
+        overlayCtx.fillStyle = gradient;
+        overlayCtx.beginPath();
+        overlayCtx.arc(centerX, centerY, emojiSize * 0.8, 0, 2 * Math.PI);
+        overlayCtx.fill();
+
+        // Add border ring
+        overlayCtx.strokeStyle = qrOptions.color.dark;
+        overlayCtx.lineWidth = 2;
+        overlayCtx.stroke();
+
+        // Add emoji with shadow
+        overlayCtx.shadowColor = "rgba(0,0,0,0.4)";
+        overlayCtx.shadowBlur = 8;
+        overlayCtx.shadowOffsetX = 3;
+        overlayCtx.shadowOffsetY = 3;
+
+        overlayCtx.font = `${emojiSize}px Arial`;
+        overlayCtx.textAlign = "center";
+        overlayCtx.textBaseline = "middle";
+        overlayCtx.fillText(selectedMeme, centerX, centerY);
+      }
+
+      const url = overlayCanvas.toDataURL();
       setQrCodeUrl(url);
+
+      // Add success animation
+      setTimeout(() => {
+        if (overlayCanvas) {
+          overlayCanvas.className = "qr-canvas-display new-generated";
+          setTimeout(() => {
+            overlayCanvas.className = "qr-canvas-display";
+          }, 600);
+        }
+      }, 100);
     } catch (error) {
       console.error("Error generating QR code:", error);
     } finally {
       setIsGenerating(false);
     }
-  }, [qrData, qrOptions]);
+  }, [qrData, qrOptions, selectedMeme]);
 
   React.useEffect(() => {
     generateQRCode();
@@ -194,6 +300,64 @@ const QRCodeGenerator = () => {
           />
         </div>
 
+        {/* Meme Selector Section */}
+        <div className="meme-section">
+          <h3>
+            <Smile
+              size={18}
+              style={{ display: "inline", marginRight: "8px" }}
+            />
+            Choose Your Meme Style
+          </h3>
+          <div className="meme-controls">
+            <button
+              className="meme-toggle-btn"
+              onClick={() => setShowMemeSelector(!showMemeSelector)}
+            >
+              {showMemeSelector ? "Hide Memes" : "Show Memes"} {selectedMeme}
+            </button>
+            <button
+              className="random-meme-btn"
+              onClick={() => {
+                const randomMeme =
+                  memeCollection[
+                    Math.floor(Math.random() * memeCollection.length)
+                  ];
+                setSelectedMeme(randomMeme.emoji);
+              }}
+              title="Random Meme"
+            >
+              🎲 Random
+            </button>
+          </div>
+
+          {showMemeSelector && (
+            <div className="meme-grid">
+              {memeCollection.map((meme, index) => (
+                <button
+                  key={index}
+                  className={`meme-btn ${
+                    selectedMeme === meme.emoji ? "selected" : ""
+                  }`}
+                  onClick={() => setSelectedMeme(meme.emoji)}
+                  title={meme.name}
+                >
+                  <span className="meme-emoji">{meme.emoji}</span>
+                  <span className="meme-name">{meme.name}</span>
+                </button>
+              ))}
+              <button
+                className={`meme-btn ${selectedMeme === "" ? "selected" : ""}`}
+                onClick={() => setSelectedMeme("")}
+                title="No Meme"
+              >
+                <span className="meme-emoji">❌</span>
+                <span className="meme-name">None</span>
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="ai-suggestions">
           <h3>
             <Sparkles
@@ -222,17 +386,57 @@ const QRCodeGenerator = () => {
           {isGenerating ? (
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <RefreshCw className="animate-spin" size={24} />
-              <span>Generating QR Code...</span>
+              <span>Generating Awesome QR Code...</span>
             </div>
           ) : (
-            <canvas
-              ref={canvasRef}
-              style={{
-                maxWidth: "100%",
-                height: "auto",
-                borderRadius: "8px",
-              }}
-            />
+            <div className="qr-canvas-container">
+              <canvas ref={canvasRef} style={{ display: "none" }} />
+              <canvas
+                ref={overlayCanvasRef}
+                className="qr-canvas-display"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto",
+                  borderRadius: "12px",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                  transition: "all 0.3s ease",
+                }}
+              />
+              {selectedMeme && (
+                <div className="meme-indicator">
+                  <Zap size={16} />
+                  <span>
+                    {selectedMeme === "🔥"
+                      ? "This QR is LIT! 🔥"
+                      : selectedMeme === "💎"
+                      ? "Diamond Hands QR! 💎"
+                      : selectedMeme === "🚀"
+                      ? "QR to the Moon! 🚀"
+                      : selectedMeme === "🤣"
+                      ? "LOL QR Code! 🤣"
+                      : selectedMeme === "💀"
+                      ? "Deadly QR Code! 💀"
+                      : selectedMeme === "🤖"
+                      ? "Beep Boop QR! 🤖"
+                      : selectedMeme === "🦄"
+                      ? "Magical QR! 🦄"
+                      : selectedMeme === "🎉"
+                      ? "Party QR! 🎉"
+                      : selectedMeme === "👑"
+                      ? "Royal QR Code! 👑"
+                      : selectedMeme === "🤡"
+                      ? "Clown QR! 🤡"
+                      : selectedMeme === "🧠"
+                      ? "Big Brain QR! 🧠"
+                      : selectedMeme === "🍕"
+                      ? "Pizza QR Time! 🍕"
+                      : selectedMeme === "🎮"
+                      ? "Gamer QR! 🎮"
+                      : "Meme Enhanced!"}
+                  </span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
