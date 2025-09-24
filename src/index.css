@@ -429,6 +429,13 @@ body {
   border-radius: 12px;
   padding: 20px;
   margin-top: 16px;
+  transition: all 0.2s ease;
+}
+
+.meme-section.disabled {
+  opacity: 0.6;
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 
 .meme-section h3 {

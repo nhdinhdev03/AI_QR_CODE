@@ -502,16 +502,40 @@ const QRCodeGenerator = () => {
           />
         </div>
 
-        {/* Image Selector Section */}
-        <div className="meme-section">
+        {/* Image Selector Section - chỉ khi có URL */}
+        <div
+          className={`meme-section ${!isURL(qrData.trim()) ? "disabled" : ""}`}
+        >
           <h3>🖼️ {getTranslation(language, "chooseMemeImage")}</h3>
 
-          {/* Thông báo khi phát hiện URL */}
+          {/* Thông báo khi chưa có URL */}
+          {!isURL(qrData.trim()) && qrData.trim() !== "" && (
+            <div
+              style={{
+                background: "var(--warning-color)",
+                color: "white",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                fontSize: "0.8rem",
+                marginBottom: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              ⚠️ Vui lòng nhập link để có thể chọn hình ảnh meme
+            </div>
+          )}
 
           <div className="meme-controls">
             <button
               className="meme-toggle-btn"
               onClick={() => setShowImageSelector(!showImageSelector)}
+              disabled={!isURL(qrData.trim())}
+              style={{
+                opacity: !isURL(qrData.trim()) ? 0.5 : 1,
+                cursor: !isURL(qrData.trim()) ? "not-allowed" : "pointer",
+              }}
             >
               {showImageSelector
                 ? getTranslation(language, "hideImages")
@@ -521,12 +545,17 @@ const QRCodeGenerator = () => {
               className="random-meme-btn"
               onClick={() => setSelectedImage(getRandomImage())}
               title={getTranslation(language, "random")}
+              disabled={!isURL(qrData.trim())}
+              style={{
+                opacity: !isURL(qrData.trim()) ? 0.5 : 1,
+                cursor: !isURL(qrData.trim()) ? "not-allowed" : "pointer",
+              }}
             >
               🎲 {getTranslation(language, "random")}
             </button>
           </div>
 
-          {showImageSelector && (
+          {showImageSelector && isURL(qrData.trim()) && (
             <div className="media-grid">
               {imageCollection.map((image, index) => (
                 <button
