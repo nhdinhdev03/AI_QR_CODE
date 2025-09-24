@@ -13,35 +13,81 @@ export const useTheme = () => {
 // eslint-disable-next-line react/prop-types
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
-    // Check localStorage first, then system preference
-    const saved = localStorage.getItem("theme");
-    if (saved) {
-      return saved === "dark";
+    // Prevent flash of wrong theme by checking saved theme immediately
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark" || saved === "light") {
+        // Set the theme attribute immediately to prevent flash
+        document.documentElement.setAttribute("data-theme", saved);
+        return saved === "dark";
+      }
+    } catch (error) {
+      console.warn("Error reading theme from localStorage:", error);
     }
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    // Fallback to system preference
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+    document.documentElement.setAttribute(
+      "data-theme",
+      prefersDark ? "dark" : "light"
+    );
+    return prefersDark;
   });
 
   const [language, setLanguage] = useState(() => {
-    // Check localStorage first, then browser language
-    const saved = localStorage.getItem("language");
-    if (saved) {
-      return saved;
+    try {
+      const saved = localStorage.getItem("language");
+      if (saved === "en" || saved === "vi") {
+        return saved;
+      }
+    } catch (error) {
+      console.warn("Error reading language from localStorage:", error);
     }
+
+    // Fallback to browser language
     const browserLang = navigator.language.toLowerCase();
     return browserLang.startsWith("vi") ? "vi" : "en";
   });
 
   useEffect(() => {
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-    document.documentElement.setAttribute(
-      "data-theme",
-      isDark ? "dark" : "light"
-    );
+    try {
+      const theme = isDark ? "dark" : "light";
+      localStorage.setItem("theme", theme);
+      document.documentElement.setAttribute("data-theme", theme);
+
+      // Add smooth transition class after initial load
+      if (!document.documentElement.classList.contains("theme-loaded")) {
+        document.documentElement.classList.add("theme-loaded");
+      }
+    } catch (error) {
+      console.warn("Error saving theme to localStorage:", error);
+    }
   }, [isDark]);
 
   useEffect(() => {
-    localStorage.setItem("language", language);
+    try {
+      localStorage.setItem("language", language);
+    } catch (error) {
+      console.warn("Error saving language to localStorage:", error);
+    }
   }, [language]);
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e) => {
+      // Only update if user hasn't manually set a preference
+      const savedTheme = localStorage.getItem("theme");
+      if (!savedTheme) {
+        setIsDark(e.matches);
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   const toggleTheme = () => setIsDark(!isDark);
 

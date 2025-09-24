@@ -4,6 +4,24 @@
   box-sizing: border-box;
 }
 
+/* Prevent flash of unstyled content during theme loading */
+html:not([data-theme]) {
+  visibility: hidden;
+}
+
+html[data-theme] {
+  visibility: visible;
+}
+
+/* Smooth theme transitions after initial load */
+html.theme-loaded,
+html.theme-loaded *,
+html.theme-loaded *:before,
+html.theme-loaded *:after {
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
 :root {
   /* Light theme colors - Professional & Clean */
   --bg-primary: #f8fafc;
@@ -52,9 +70,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg-primary);
   min-height: 100vh;
-  transition: all 0.2s ease;
   color: var(--text-primary);
   line-height: 1.6;
+  /* No transition on initial load, added via .theme-loaded class */
 }
 
 .container {
