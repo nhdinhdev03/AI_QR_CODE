@@ -21,7 +21,7 @@ import img9 from "../img/image copy 9.png";
 import img1 from "../img/image copy.png";
 
 const QRCodeGenerator = () => {
-  const [qrData, setQrData] = useState("Hello, World! 🌍");
+  const [qrData, setQrData] = useState("");
   const [qrOptions, setQrOptions] = useState({
     errorCorrectionLevel: "H", // High error correction for logo overlay
     type: "image/png",
