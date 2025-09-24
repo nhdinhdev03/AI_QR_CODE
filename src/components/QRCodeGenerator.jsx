@@ -115,7 +115,7 @@ const QRCodeGenerator = () => {
     prevIsUrlRef.current = nowIsUrl;
   }, [qrData]);
 
-  // AI-powered suggestions for QR code content
+  // Suggestions for QR code content
   const suggestions = getTranslation(language, "suggestions");
 
   const generateQRCode = useCallback(async () => {
@@ -507,7 +507,7 @@ const QRCodeGenerator = () => {
           )}
         </div>
 
-        <div className="ai-suggestions">
+        <div className="suggestions-section">
           <h3>
             <Sparkles
               size={18}

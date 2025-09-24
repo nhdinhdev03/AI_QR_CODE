@@ -2,9 +2,8 @@
 export const translations = {
   en: {
     // Header
-    title: "AI QR Code Generator",
-    subtitle:
-      "Create beautiful, customizable QR codes with AI-powered suggestions",
+    title: "QR Code Generator",
+    subtitle: "Create beautiful, customizable QR codes with smart suggestions",
 
     // Controls
     qrContent: "QR Code Content",
@@ -30,8 +29,8 @@ export const translations = {
     random: "Random",
     none: "None",
 
-    // AI Suggestions
-    aiSuggestions: "AI Suggestions",
+    // Suggestions
+    aiSuggestions: "Suggestions",
     suggestions: [
       "Visit our website: https://example.com",
       "Contact us: tel:+1234567890",
@@ -56,7 +55,7 @@ export const translations = {
     featuresList: [
       "Customizable colors and sizes",
       "Multiple error correction levels",
-      "AI-powered content suggestions",
+      "Smart content suggestions",
       "High-quality PNG export",
       "Copy to clipboard support",
       "Dark mode support",
@@ -71,8 +70,8 @@ export const translations = {
 
   vi: {
     // Header
-    title: "Trình Tạo Mã QR AI",
-    subtitle: "Tạo mã QR đẹp, tùy chỉnh với gợi ý được hỗ trợ bởi AI",
+    title: "Trình Tạo Mã QR",
+    subtitle: "Tạo mã QR đẹp, tùy chỉnh với gợi ý thông minh",
 
     // Controls
     qrContent: "Nội Dung Mã QR",
@@ -98,8 +97,8 @@ export const translations = {
     random: "Ngẫu Nhiên",
     none: "Không",
 
-    // AI Suggestions
-    aiSuggestions: "Gợi Ý AI",
+    // Suggestions
+    aiSuggestions: "Gợi Ý",
     suggestions: [
       "Truy cập website: https://example.com",
       "Liên hệ: tel:+1234567890",
@@ -124,7 +123,7 @@ export const translations = {
     featuresList: [
       "Tùy chỉnh màu sắc và kích thước",
       "Nhiều mức độ sửa lỗi",
-      "Gợi ý nội dung bằng AI",
+      "Gợi ý nội dung thông minh",
       "Xuất PNG chất lượng cao",
       "Hỗ trợ sao chép clipboard",
       "Hỗ trợ chế độ tối",

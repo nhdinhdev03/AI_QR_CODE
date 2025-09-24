@@ -453,7 +453,7 @@ body {
   margin-top: 5px;
 }
 
-.ai-suggestions {
+.suggestions-section {
   background: var(--glass-bg);
   backdrop-filter: blur(15px);
   border: 1px solid var(--glass-border);
@@ -463,12 +463,12 @@ body {
   transition: all 0.3s ease;
 }
 
-.ai-suggestions:hover {
+.suggestions-section:hover {
   background: rgba(124, 124, 240, 0.1);
   transform: translateY(-1px);
 }
 
-.ai-suggestions h3 {
+.suggestions-section h3 {
   color: var(--text-primary);
   margin-bottom: 15px;
   font-size: 1.1rem;
