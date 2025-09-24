@@ -37,6 +37,7 @@ const QRCodeGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showImageSelector, setShowImageSelector] = useState(false);
+  const [triggerGeneration, setTriggerGeneration] = useState(0);
 
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
@@ -92,6 +93,8 @@ const QRCodeGenerator = () => {
       const randomImage = getRandomImage();
       setSelectedImage(randomImage);
       setShowImageSelector(true); // Mở selector để user thấy ảnh được chọn
+      // Force regenerate QR code with new image
+      setTriggerGeneration((prev) => prev + 1);
     }
   }, [qrData]);
 
@@ -112,6 +115,9 @@ const QRCodeGenerator = () => {
   const generateQRCode = useCallback(async () => {
     if (!qrData.trim()) return;
 
+    console.log("Generating QR Code with data:", qrData);
+    console.log("Selected image:", selectedImage);
+
     setIsGenerating(true);
 
     // Add generating animation
@@ -122,6 +128,18 @@ const QRCodeGenerator = () => {
 
     try {
       const canvas = canvasRef.current;
+
+      if (!canvas) {
+        console.error("Canvas ref is null");
+        return;
+      }
+
+      if (!overlayCanvas) {
+        console.error("Overlay canvas ref is null");
+        return;
+      }
+
+      console.log("Canvas and overlay canvas are ready");
 
       // Generate basic QR code
       await QRCode.toCanvas(canvas, qrData, qrOptions);
@@ -223,10 +241,11 @@ const QRCodeGenerator = () => {
       }
     } catch (error) {
       console.error("Error generating QR code:", error);
+      alert("Error generating QR code: " + error.message);
     } finally {
       setIsGenerating(false);
     }
-  }, [qrData, qrOptions, selectedImage]);
+  }, [qrData, qrOptions, selectedImage, triggerGeneration]);
 
   React.useEffect(() => {
     generateQRCode();
