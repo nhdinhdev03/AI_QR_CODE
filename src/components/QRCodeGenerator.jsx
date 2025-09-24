@@ -234,29 +234,6 @@ const QRCodeGenerator = () => {
         const centerY = canvas.height / 2;
         const imageSize = Math.min(canvas.width, canvas.height) * 0.2;
 
-        // Create background circle with gradient
-        const gradient = overlayCtx.createRadialGradient(
-          centerX,
-          centerY,
-          0,
-          centerX,
-          centerY,
-          imageSize * 0.9
-        );
-        gradient.addColorStop(0, qrOptions.color.light);
-        gradient.addColorStop(0.8, qrOptions.color.light);
-        gradient.addColorStop(1, "rgba(255,255,255,0.9)");
-
-        overlayCtx.fillStyle = gradient;
-        overlayCtx.beginPath();
-        overlayCtx.arc(centerX, centerY, imageSize * 0.9, 0, 2 * Math.PI);
-        overlayCtx.fill();
-
-        // Add decorative border ring
-        overlayCtx.strokeStyle = qrOptions.color.dark;
-        overlayCtx.lineWidth = 3;
-        overlayCtx.stroke();
-
         // Load and draw image
         const img = new Image();
         img.onload = () => {
@@ -264,17 +241,11 @@ const QRCodeGenerator = () => {
 
           // Create circular clipping path for image
           overlayCtx.beginPath();
-          overlayCtx.arc(centerX, centerY, imageSize * 0.7, 0, 2 * Math.PI);
+          overlayCtx.arc(centerX, centerY, imageSize * 0.8, 0, 2 * Math.PI);
           overlayCtx.clip();
 
-          // Add shadow for image
-          overlayCtx.shadowColor = "rgba(0,0,0,0.6)";
-          overlayCtx.shadowBlur = 15;
-          overlayCtx.shadowOffsetX = 5;
-          overlayCtx.shadowOffsetY = 5;
-
-          // Calculate image dimensions to fit in circle
-          const imgSize = imageSize * 1.4;
+          // Calculate image dimensions to fit in circle (không có shadow và background)
+          const imgSize = imageSize * 1.6;
           overlayCtx.drawImage(
             img,
             centerX - imgSize / 2,

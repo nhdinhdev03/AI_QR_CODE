@@ -606,23 +606,6 @@ body {
   border-color: rgba(78, 205, 196, 0.2);
 }
 
-.media-btn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
-.media-btn:hover::before {
-  opacity: 0.2;
-}
-
 .media-btn.selected {
   border-color: #4ecdc4;
   background: rgba(78, 205, 196, 0.25);
