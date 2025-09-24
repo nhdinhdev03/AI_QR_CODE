@@ -41,6 +41,19 @@ const QRCodeGenerator = () => {
 
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
+  const prevIsUrlRef = useRef(false);
+
+  // Helper: animate canvas class transitions
+  const animateCanvas = (canvas, delay = 100) => {
+    setTimeout(() => {
+      if (canvas) {
+        canvas.className = "qr-canvas-display new-generated";
+        setTimeout(() => {
+          canvas.className = "qr-canvas-display";
+        }, 600);
+      }
+    }, delay);
+  };
 
   // Image collection - chỉ có hình ảnh, không có emoji
   const imageCollection = [
@@ -86,16 +99,17 @@ const QRCodeGenerator = () => {
     }
   };
 
-  // Auto random image when URL is detected
+  // Auto random image when URL is detected (only when it first becomes a URL)
   React.useEffect(() => {
-    if (qrData.trim() && isURL(qrData.trim())) {
-      // Random image ngay lập tức và mở image selector để user thấy
+    const text = qrData.trim();
+    const nowIsUrl = !!text && isURL(text);
+    if (nowIsUrl && !prevIsUrlRef.current) {
       const randomImage = getRandomImage();
       setSelectedImage(randomImage);
-      setShowImageSelector(true); // Mở selector để user thấy ảnh được chọn
-      // Force regenerate QR code with new image
+      setShowImageSelector(true);
       setTriggerGeneration((prev) => prev + 1);
     }
+    prevIsUrlRef.current = nowIsUrl;
   }, [qrData]);
 
   // AI-powered suggestions for QR code content
@@ -151,6 +165,15 @@ const QRCodeGenerator = () => {
       overlayCanvas.width = canvas.width;
       overlayCanvas.height = canvas.height;
       overlayCtx.drawImage(canvas, 0, 0);
+
+      // Immediately show the base QR (without image) so users see feedback instantly
+      try {
+        const baseUrl = overlayCanvas.toDataURL();
+        setQrCodeUrl(baseUrl);
+        animateCanvas(overlayCanvas, 50);
+      } catch (e) {
+        console.warn("Failed to create base data URL early:", e);
+      }
 
       // Add image in the center if selected
       if (selectedImage) {
@@ -214,30 +237,29 @@ const QRCodeGenerator = () => {
           setQrCodeUrl(url);
 
           // Add success animation after image is loaded
-          setTimeout(() => {
-            if (overlayCanvas) {
-              overlayCanvas.className = "qr-canvas-display new-generated";
-              setTimeout(() => {
-                overlayCanvas.className = "qr-canvas-display";
-              }, 600);
-            }
-          }, 100);
+          animateCanvas(overlayCanvas, 100);
+        };
+        img.onerror = (err) => {
+          console.error(
+            "Failed to load center image:",
+            selectedImage?.content,
+            err
+          );
+          try {
+            const url = overlayCanvas.toDataURL();
+            setQrCodeUrl(url);
+            animateCanvas(overlayCanvas, 100);
+          } catch (e) {
+            console.warn("Fallback toDataURL failed after image error:", e);
+          }
         };
         img.src = selectedImage.content;
       } else {
         // No image selected, just set the QR code URL
         const url = overlayCanvas.toDataURL();
         setQrCodeUrl(url);
-
         // Add success animation
-        setTimeout(() => {
-          if (overlayCanvas) {
-            overlayCanvas.className = "qr-canvas-display new-generated";
-            setTimeout(() => {
-              overlayCanvas.className = "qr-canvas-display";
-            }, 600);
-          }
-        }, 100);
+        animateCanvas(overlayCanvas, 100);
       }
     } catch (error) {
       console.error("Error generating QR code:", error);
@@ -330,11 +352,12 @@ const QRCodeGenerator = () => {
 
         <div className="color-inputs">
           <div className="color-input-group">
-            <label>Foreground Color</label>
+            <label htmlFor="color-dark">Foreground Color</label>
             <div className="color-input-wrapper">
               <input
                 type="color"
                 className="color-input"
+                id="color-dark"
                 value={qrOptions.color.dark}
                 onChange={(e) => updateOption("color.dark", e.target.value)}
               />
@@ -348,11 +371,12 @@ const QRCodeGenerator = () => {
           </div>
 
           <div className="color-input-group">
-            <label>Background Color</label>
+            <label htmlFor="color-light">Background Color</label>
             <div className="color-input-wrapper">
               <input
                 type="color"
                 className="color-input"
+                id="color-light"
                 value={qrOptions.color.light}
                 onChange={(e) => updateOption("color.light", e.target.value)}
               />
@@ -491,33 +515,44 @@ const QRCodeGenerator = () => {
 
       <div className="preview-section">
         <div className="qr-preview">
-          {isGenerating ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <RefreshCw className="animate-spin" size={24} />
-              <span>Generating Awesome QR Code...</span>
-            </div>
-          ) : (
-            <div className="qr-canvas-container">
-              <canvas ref={canvasRef} style={{ display: "none" }} />
-              <canvas
-                ref={overlayCanvasRef}
-                className="qr-canvas-display"
+          <div className="qr-canvas-container" style={{ position: "relative" }}>
+            <canvas ref={canvasRef} style={{ display: "none" }} />
+            <canvas
+              ref={overlayCanvasRef}
+              className="qr-canvas-display"
+              style={{
+                maxWidth: "100%",
+                height: "auto",
+                borderRadius: "12px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                transition: "all 0.3s ease",
+              }}
+            />
+            {selectedImage && (
+              <div className="meme-indicator">
+                <Zap size={16} />
+                <span>Enhanced with: {selectedImage.name}</span>
+              </div>
+            )}
+            {isGenerating && (
+              <div
                 style={{
-                  maxWidth: "100%",
-                  height: "auto",
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  background: "rgba(255,255,255,0.35)",
+                  backdropFilter: "blur(2px)",
                   borderRadius: "12px",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                  transition: "all 0.3s ease",
                 }}
-              />
-              {selectedImage && (
-                <div className="meme-indicator">
-                  <Zap size={16} />
-                  <span>Enhanced with: {selectedImage.name}</span>
-                </div>
-              )}
-            </div>
-          )}
+              >
+                <RefreshCw className="animate-spin" size={24} />
+                <span>Generating Awesome QR Code...</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="download-buttons">
