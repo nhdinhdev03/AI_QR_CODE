@@ -29,6 +29,7 @@ export const translations = {
     random: "Random",
     none: "None",
     urlDetected: "URL detected! Image gallery opened automatically",
+    enterContentFirst: "Please enter content first to add images",
 
     // Suggestions
     aiSuggestions: "Suggestions",
@@ -126,6 +127,7 @@ export const translations = {
     random: "Ngẫu Nhiên",
     none: "Không",
     urlDetected: "🔗 Phát hiện URL! Gallery hình ảnh đã mở tự động",
+    enterContentFirst: "Vui lòng nhập nội dung trước để thêm hình ảnh",
 
     // Suggestions
     aiSuggestions: "Gợi Ý",

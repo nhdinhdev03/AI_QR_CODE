@@ -58,6 +58,7 @@ const QRCodeGenerator = () => {
   const [triggerGeneration, setTriggerGeneration] = useState(0);
   const [validationMessage, setValidationMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
@@ -117,7 +118,7 @@ const QRCodeGenerator = () => {
 
   // Validation functions for different content types
   const validateContent = (text) => {
-    if (!text || !text.trim()) {
+    if (!text?.trim()) {
       setErrorMessage(getTranslation(language, "errors.emptyContent"));
       setValidationMessage("");
       return { isValid: false, type: "empty" };
@@ -201,14 +202,14 @@ const QRCodeGenerator = () => {
   const isPhone = (text) => {
     if (!text) return false;
     const phonePattern =
-      /^(\+?[1-9]\d{0,3})?[-.\s]?\(?[0-9]{1,4}\)?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,9}$/;
+      /^(\+?[1-9]\d{0,3})?[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}$/;
     return phonePattern.test(text) || text.startsWith("tel:");
   };
 
   // Function to check if text is SMS format
   const isSMS = (text) => {
     if (!text) return false;
-    const smsPattern = /^sms:[+]?[0-9]+(:.*)?$/;
+    const smsPattern = /^sms:[+]?\d+(:.*)?$/;
     return smsPattern.test(text);
   };
 
@@ -222,8 +223,7 @@ const QRCodeGenerator = () => {
   // Function to check if text is geo location
   const isGeo = (text) => {
     if (!text) return false;
-    const geoPattern =
-      /^geo:[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$/;
+    const geoPattern = /^geo:[-+]?\d+\.?\d*,[-+]?\d+\.?\d*$/;
     return geoPattern.test(text);
   };
 
@@ -273,6 +273,42 @@ const QRCodeGenerator = () => {
     return "";
   };
 
+  // Function to get success message based on content type
+  const getSuccessMessage = (contentType) => {
+    const messages = {
+      url:
+        language === "vi"
+          ? "🔗 URL phát hiện! Có thể thêm hình ảnh meme"
+          : "🔗 URL detected! You can add meme images",
+      email:
+        language === "vi"
+          ? "📧 EMAIL phát hiện! Có thể thêm hình ảnh meme"
+          : "📧 EMAIL detected! You can add meme images",
+      phone:
+        language === "vi"
+          ? "📞 SỐ ĐIỆN THOẠI phát hiện! Có thể thêm hình ảnh meme"
+          : "📞 PHONE detected! You can add meme images",
+      sms:
+        language === "vi"
+          ? "💬 SMS phát hiện! Có thể thêm hình ảnh meme"
+          : "💬 SMS detected! You can add meme images",
+      wifi:
+        language === "vi"
+          ? "📶 WIFI phát hiện! Có thể thêm hình ảnh meme"
+          : "📶 WIFI detected! You can add meme images",
+      geo:
+        language === "vi"
+          ? "📍 VỊ TRÍ phát hiện! Có thể thêm hình ảnh meme"
+          : "📍 LOCATION detected! You can add meme images",
+      text:
+        language === "vi"
+          ? "✅ Nội dung hợp lệ! Có thể thêm hình ảnh meme"
+          : "✅ Valid content! You can add meme images",
+    };
+
+    return messages[contentType] || messages.text;
+  };
+
   // Auto validation and image selection when content changes
   React.useEffect(() => {
     const text = qrData.trim();
@@ -281,17 +317,27 @@ const QRCodeGenerator = () => {
     if (text) {
       const validation = validateContent(text);
       const nowIsUrl = validation.type === "url";
+      const isValidContent = validation.isValid && validation.type !== "empty";
+
+      // Set success message for valid content
+      if (isValidContent) {
+        setSuccessMessage(getSuccessMessage(validation.type));
+      } else {
+        setSuccessMessage("");
+      }
 
       if (nowIsUrl) {
-        // Ẩn gallery và tự động random ảnh khi phát hiện URL
-        setShowImageSelector(false);
-
-        // Chỉ random ảnh mới khi lần đầu phát hiện URL
+        // Khi phát hiện URL mới, tự động hiện gallery và random ảnh
         if (!prevIsUrlRef.current) {
+          setShowImageSelector(true);
           const randomImage = getRandomImage();
           setSelectedImage(randomImage);
           setTriggerGeneration((prev) => prev + 1);
         }
+      } else if (isValidContent) {
+        // Cho các loại nội dung hợp lệ khác (email, sms, wifi, geo, etc)
+        // Có thể chọn hình ảnh meme nhưng không tự động random
+        // Gallery sẽ được bật thủ công bởi người dùng
       }
 
       prevIsUrlRef.current = nowIsUrl;
@@ -299,6 +345,7 @@ const QRCodeGenerator = () => {
       // Khi xóa hết text, reset về trạng thái ban đầu
       setErrorMessage("");
       setValidationMessage("");
+      setSuccessMessage("");
       setShowImageSelector(false);
       setSelectedImage(null);
       prevIsUrlRef.current = false;
@@ -687,14 +734,12 @@ const QRCodeGenerator = () => {
           />
         </div>
 
-        {/* Image Selector Section - chỉ khi có URL */}
-        <div
-          className={`meme-section ${!isURL(qrData.trim()) ? "disabled" : ""}`}
-        >
+        {/* Image Selector Section - cho tất cả loại nội dung hợp lệ */}
+        <div className={`meme-section ${!qrData.trim() ? "disabled" : ""}`}>
           <h3>🖼️ {getTranslation(language, "chooseMemeImage")}</h3>
 
-          {/* Thông báo khi chưa có URL */}
-          {!isURL(qrData.trim()) && qrData.trim() !== "" && (
+          {/* Thông báo dựa trên trạng thái nội dung */}
+          {!qrData.trim() && (
             <div
               style={{
                 background: "var(--warning-color)",
@@ -708,7 +753,25 @@ const QRCodeGenerator = () => {
                 gap: "6px",
               }}
             >
-              ⚠️ Vui lòng nhập link để có thể chọn hình ảnh meme
+              ⚠️ {getTranslation(language, "enterContentFirst")}
+            </div>
+          )}
+
+          {successMessage && (
+            <div
+              style={{
+                background: "var(--success-color)",
+                color: "white",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                fontSize: "0.8rem",
+                marginBottom: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              {successMessage}
             </div>
           )}
 
@@ -716,10 +779,10 @@ const QRCodeGenerator = () => {
             <button
               className="meme-toggle-btn"
               onClick={() => setShowImageSelector(!showImageSelector)}
-              disabled={!isURL(qrData.trim())}
+              disabled={!qrData.trim()}
               style={{
-                opacity: !isURL(qrData.trim()) ? 0.5 : 1,
-                cursor: !isURL(qrData.trim()) ? "not-allowed" : "pointer",
+                opacity: !qrData.trim() ? 0.5 : 1,
+                cursor: !qrData.trim() ? "not-allowed" : "pointer",
               }}
             >
               {showImageSelector
@@ -730,17 +793,17 @@ const QRCodeGenerator = () => {
               className="random-meme-btn"
               onClick={() => setSelectedImage(getRandomImage())}
               title={getTranslation(language, "random")}
-              disabled={!isURL(qrData.trim())}
+              disabled={!qrData.trim()}
               style={{
-                opacity: !isURL(qrData.trim()) ? 0.5 : 1,
-                cursor: !isURL(qrData.trim()) ? "not-allowed" : "pointer",
+                opacity: !qrData.trim() ? 0.5 : 1,
+                cursor: !qrData.trim() ? "not-allowed" : "pointer",
               }}
             >
               🎲 {getTranslation(language, "random")}
             </button>
           </div>
 
-          {showImageSelector && isURL(qrData.trim()) && (
+          {showImageSelector && qrData.trim() && (
             <div className="media-grid">
               {imageCollection.map((image, index) => (
                 <button

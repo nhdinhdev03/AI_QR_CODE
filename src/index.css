@@ -73,7 +73,7 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   /* No transition on initial load, added via .theme-loaded class */
-  
+
   /* Mobile optimizations */
   -webkit-overflow-scrolling: touch;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
@@ -730,7 +730,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -756,7 +757,7 @@ body {
 }
 
 .mobile-loading::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
