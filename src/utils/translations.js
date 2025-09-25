@@ -47,6 +47,7 @@ export const translations = {
     ],
 
     // Actions
+    generateQR: "Generate QR Code",
     downloadPng: "Download PNG",
     copyToClipboard: "Copy to Clipboard",
     generating: "Generating Awesome QR Code...",
@@ -145,6 +146,7 @@ export const translations = {
     ],
 
     // Actions
+    generateQR: "Tạo Mã QR",
     downloadPng: "Tải PNG",
     copyToClipboard: "Sao Chép",
     generating: "Đang Tạo Mã QR Tuyệt Vời...",

@@ -55,7 +55,6 @@ const QRCodeGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showImageSelector, setShowImageSelector] = useState(false);
-  const [triggerGeneration, setTriggerGeneration] = useState(0);
   const [validationMessage, setValidationMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -327,12 +326,11 @@ const QRCodeGenerator = () => {
       }
 
       if (nowIsUrl) {
-        // Khi phát hiện URL mới, tự động hiện gallery và random ảnh
+        // Khi phát hiện URL mới, tự động hiện gallery và random ảnh (không auto generate)
         if (!prevIsUrlRef.current) {
           setShowImageSelector(true);
           const randomImage = getRandomImage();
           setSelectedImage(randomImage);
-          setTriggerGeneration((prev) => prev + 1);
         }
       } else if (isValidContent) {
         // Cho các loại nội dung hợp lệ khác (email, sms, wifi, geo, etc)
@@ -352,22 +350,7 @@ const QRCodeGenerator = () => {
     }
   }, [qrData]);
 
-  // Debounced QR generation - faster for URLs, slower for other content
-  React.useEffect(() => {
-    if (!qrData.trim()) {
-      setQrCodeUrl("");
-      return;
-    }
-
-    // Generate faster for URLs, slower for other content
-    const delay = isURL(qrData.trim()) ? 200 : 800;
-
-    const timer = setTimeout(() => {
-      setTriggerGeneration((prev) => prev + 1);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [qrData]);
+  // Removed auto-generation - now only manual generation
 
   // Suggestions for QR code content
   const suggestions = getTranslation(language, "suggestions");
@@ -514,11 +497,9 @@ const QRCodeGenerator = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [qrData, qrOptions, selectedImage, triggerGeneration]);
+  }, [qrData, qrOptions, selectedImage]);
 
-  React.useEffect(() => {
-    generateQRCode();
-  }, [generateQRCode]);
+  // Removed auto-generation useEffect - now manual only
 
   const downloadQRCode = (format = "png") => {
     if (!qrCodeUrl) return;
@@ -574,6 +555,23 @@ const QRCodeGenerator = () => {
     setQrData(suggestion);
   };
 
+  const handleGenerateQR = () => {
+    if (!qrData.trim()) {
+      setErrorMessage(getTranslation(language, "errors.emptyContent"));
+      return;
+    }
+
+    // Validate before generating
+    const validation = validateContent(qrData);
+    if (!validation.isValid) {
+      return; // Error message already set by validateContent
+    }
+
+    // Clear any previous QR code and generate new one
+    setQrCodeUrl("");
+    generateQRCode();
+  };
+
   const updateOption = (key, value) => {
     if (key.includes(".")) {
       const [parent, child] = key.split(".");
@@ -603,22 +601,37 @@ const QRCodeGenerator = () => {
             id="qr-data"
             value={qrData}
             onChange={(e) => setQrData(e.target.value)}
-            onBlur={() => {
-              // Generate immediately when user finishes typing
-              if (qrData.trim()) {
-                setTriggerGeneration((prev) => prev + 1);
-              }
-            }}
-            onKeyDown={(e) => {
-              // Generate immediately on Enter
-              if (e.key === "Enter" && !e.shiftKey && qrData.trim()) {
-                e.preventDefault();
-                setTriggerGeneration((prev) => prev + 1);
-              }
-            }}
             placeholder={getTranslation(language, "qrContentPlaceholder")}
             rows={3}
           />
+
+          {/* Generate Button */}
+          <button
+            className="btn btn-primary"
+            onClick={handleGenerateQR}
+            disabled={!qrData.trim() || isGenerating}
+            style={{
+              marginTop: "12px",
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              minHeight: "44px",
+            }}
+          >
+            {isGenerating ? (
+              <>
+                <RefreshCw className="animate-spin" size={18} />
+                {getTranslation(language, "generating")}
+              </>
+            ) : (
+              <>
+                <Zap size={18} />
+                {getTranslation(language, "generateQR")}
+              </>
+            )}
+          </button>
 
           {/* Validation and Error Messages */}
           {validationMessage && (
@@ -631,6 +644,11 @@ const QRCodeGenerator = () => {
               {errorMessage}
               {getContentExample(errorMessage)}
             </div>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="validation-message success">{successMessage}</div>
           )}
         </div>
 
@@ -871,7 +889,7 @@ const QRCodeGenerator = () => {
           <div className="qr-canvas-container" style={{ position: "relative" }}>
             <canvas ref={canvasRef} style={{ display: "none" }} />
 
-            {!qrData.trim() && (
+            {!qrCodeUrl && (
               <div
                 style={{
                   width: "300px",
@@ -885,9 +903,16 @@ const QRCodeGenerator = () => {
                   fontSize: "0.9rem",
                   textAlign: "center",
                   padding: "20px",
+                  flexDirection: "column",
+                  gap: "10px",
                 }}
               >
-                Nhập nội dung để tạo mã QR
+                <Zap size={32} style={{ opacity: 0.5 }} />
+                <span>
+                  {language === "vi"
+                    ? "Nhập nội dung và bấm 'Tạo Mã QR'"
+                    : "Enter content and click 'Generate QR Code'"}
+                </span>
               </div>
             )}
 
@@ -900,7 +925,7 @@ const QRCodeGenerator = () => {
                 borderRadius: "12px",
                 boxShadow: "0 4px 12px var(--shadow-light)",
                 transition: "all 0.2s ease",
-                display: qrData.trim() ? "block" : "none",
+                display: qrCodeUrl ? "block" : "none",
               }}
             />
             {selectedImage && (
