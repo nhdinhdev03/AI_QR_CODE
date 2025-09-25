@@ -115,6 +115,26 @@ const QRCodeGenerator = () => {
     return imageCollection[Math.floor(Math.random() * imageCollection.length)];
   };
 
+  // Function to get contextual image suggestions based on content type
+  const getContextualImages = (contentType) => {
+    // For now, return all images but we could filter by content type in the future
+    // This could be enhanced to show phone-related images for phone numbers, etc.
+    switch (contentType) {
+      case "phone":
+      case "sms":
+        // Could return contact/communication related images
+        return imageCollection.slice(0, 10); // First 10 images as communication theme
+      case "email":
+        // Could return email/communication related images
+        return imageCollection.slice(5, 15); // Different set for email
+      case "url":
+        // All images for URL
+        return imageCollection;
+      default:
+        return imageCollection;
+    }
+  };
+
   // Validation functions for different content types
   const validateContent = (text) => {
     if (!text?.trim()) {
@@ -200,9 +220,26 @@ const QRCodeGenerator = () => {
   // Function to check if text is a phone number
   const isPhone = (text) => {
     if (!text) return false;
-    const phonePattern =
-      /^(\+?[1-9]\d{0,3})?[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}$/;
-    return phonePattern.test(text) || text.startsWith("tel:");
+
+    // Remove all spaces, dots, dashes for better validation
+    const cleanText = text.replace(/[\s.-]/g, "");
+
+    // Check for tel: prefix
+    if (text.startsWith("tel:")) return true;
+
+    // Enhanced phone patterns for different formats
+    const phonePatterns = [
+      /^(\+?\d{1,4})?[\s.-]?\(?\d{3,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,6}$/, // International format
+      /^0\d{9,11}$/, // Domestic format (Vietnam, etc)
+      /^\+\d{10,15}$/, // Simple international with +
+      /^\d{10,11}$/, // Simple domestic
+      /^(\+84|84|0)[3-9]\d{8}$/, // Vietnam specific
+    ];
+
+    return (
+      phonePatterns.some((pattern) => pattern.test(cleanText)) ||
+      phonePatterns.some((pattern) => pattern.test(text))
+    );
   };
 
   // Function to check if text is SMS format
@@ -277,28 +314,28 @@ const QRCodeGenerator = () => {
     const messages = {
       url:
         language === "vi"
-          ? "🔗 URL phát hiện! Có thể thêm hình ảnh meme"
-          : "🔗 URL detected! You can add meme images",
+          ? "🔗 URL phát hiện! Gallery hình ảnh đã mở tự động"
+          : "🔗 URL detected! Image gallery opened automatically",
       email:
         language === "vi"
-          ? "📧 EMAIL phát hiện! Có thể thêm hình ảnh meme"
-          : "📧 EMAIL detected! You can add meme images",
+          ? "📧 EMAIL phát hiện! Gallery hình ảnh đã mở cho bạn"
+          : "📧 EMAIL detected! Image gallery opened for you",
       phone:
         language === "vi"
-          ? "📞 SỐ ĐIỆN THOẠI phát hiện! Có thể thêm hình ảnh meme"
-          : "📞 PHONE detected! You can add meme images",
+          ? "📞 SỐ ĐIỆN THOẠI phát hiện! Gallery hình ảnh đã mở để thêm ảnh liên hệ"
+          : "📞 PHONE detected! Image gallery opened to add contact image",
       sms:
         language === "vi"
-          ? "💬 SMS phát hiện! Có thể thêm hình ảnh meme"
-          : "💬 SMS detected! You can add meme images",
+          ? "💬 SMS phát hiện! Gallery hình ảnh đã mở để thêm ảnh tin nhắn"
+          : "💬 SMS detected! Image gallery opened to add message image",
       wifi:
         language === "vi"
           ? "📶 WIFI phát hiện! Có thể thêm hình ảnh meme"
           : "📶 WIFI detected! You can add meme images",
       geo:
         language === "vi"
-          ? "📍 VỊ TRÍ phát hiện! Có thể thêm hình ảnh meme"
-          : "📍 LOCATION detected! You can add meme images",
+          ? "📍 VỊ TRÍ phát hiện! Có thể thêm hình ảnh bản đồ"
+          : "📍 LOCATION detected! You can add map images",
       text:
         language === "vi"
           ? "✅ Nội dung hợp lệ! Có thể thêm hình ảnh meme"
@@ -308,47 +345,79 @@ const QRCodeGenerator = () => {
     return messages[contentType] || messages.text;
   };
 
+  // Helper function to handle URL content
+  const handleUrlContent = React.useCallback(() => {
+    if (!prevIsUrlRef.current) {
+      setShowImageSelector(true);
+      const randomImage = getRandomImage();
+      setSelectedImage(randomImage);
+    }
+  }, []);
+
+  // Helper function to handle other valid content types
+  const handleOtherValidContent = React.useCallback(
+    (validation, text) => {
+      const shouldAutoOpenGallery = ["phone", "sms", "email"].includes(
+        validation.type
+      );
+
+      if (shouldAutoOpenGallery && !showImageSelector) {
+        setShowImageSelector(true);
+        console.log(`Auto-opened gallery for ${validation.type}: ${text}`);
+
+        if (!selectedImage) {
+          setTimeout(() => {
+            const contextualImages = getContextualImages(validation.type);
+            const suggestedImage =
+              contextualImages[
+                Math.floor(Math.random() * contextualImages.length)
+              ];
+            setSelectedImage(suggestedImage);
+            console.log(
+              `Auto-suggested image for ${validation.type}: ${suggestedImage.name}`
+            );
+          }, 500);
+        }
+      }
+    },
+    [showImageSelector, selectedImage]
+  );
+
+  // Helper function to reset states
+  const resetStates = React.useCallback(() => {
+    setErrorMessage("");
+    setValidationMessage("");
+    setSuccessMessage("");
+    setShowImageSelector(false);
+    setSelectedImage(null);
+    prevIsUrlRef.current = false;
+  }, []);
+
   // Auto validation and image selection when content changes
   React.useEffect(() => {
     const text = qrData.trim();
 
-    // Validate content and show appropriate messages
     if (text) {
       const validation = validateContent(text);
       const nowIsUrl = validation.type === "url";
       const isValidContent = validation.isValid && validation.type !== "empty";
 
       // Set success message for valid content
-      if (isValidContent) {
-        setSuccessMessage(getSuccessMessage(validation.type));
-      } else {
-        setSuccessMessage("");
-      }
+      setSuccessMessage(
+        isValidContent ? getSuccessMessage(validation.type) : ""
+      );
 
       if (nowIsUrl) {
-        // Khi phát hiện URL mới, tự động hiện gallery và random ảnh (không auto generate)
-        if (!prevIsUrlRef.current) {
-          setShowImageSelector(true);
-          const randomImage = getRandomImage();
-          setSelectedImage(randomImage);
-        }
+        handleUrlContent();
       } else if (isValidContent) {
-        // Cho các loại nội dung hợp lệ khác (email, sms, wifi, geo, etc)
-        // Có thể chọn hình ảnh meme nhưng không tự động random
-        // Gallery sẽ được bật thủ công bởi người dùng
+        handleOtherValidContent(validation, text);
       }
 
       prevIsUrlRef.current = nowIsUrl;
     } else {
-      // Khi xóa hết text, reset về trạng thái ban đầu
-      setErrorMessage("");
-      setValidationMessage("");
-      setSuccessMessage("");
-      setShowImageSelector(false);
-      setSelectedImage(null);
-      prevIsUrlRef.current = false;
+      resetStates();
     }
-  }, [qrData]);
+  }, [qrData, handleUrlContent, handleOtherValidContent, resetStates]);
 
   // Removed auto-generation - now only manual generation
 
