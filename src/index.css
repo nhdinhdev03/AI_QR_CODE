@@ -378,6 +378,18 @@ body {
   box-shadow: 0 2px 8px var(--shadow-light);
 }
 
+/* Action buttons container */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+
 .error-message {
   color: #dc3545;
   font-size: 0.9rem;

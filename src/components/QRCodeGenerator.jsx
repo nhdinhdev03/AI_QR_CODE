@@ -390,6 +390,7 @@ const QRCodeGenerator = () => {
     setSuccessMessage("");
     setShowImageSelector(false);
     setSelectedImage(null);
+    setQrCodeUrl(""); // Reset QR code URL to show placeholder
     prevIsUrlRef.current = false;
   }, []);
 
@@ -624,6 +625,24 @@ const QRCodeGenerator = () => {
     setQrData(suggestion);
   };
 
+  const getPlaceholderText = () => {
+    if (!qrData.trim()) {
+      return language === "vi"
+        ? "Nhập nội dung vào ô trên và bấm 'Tạo Mã QR'"
+        : "Enter content above and click 'Generate QR Code'";
+    }
+
+    if (qrCodeUrl) {
+      return language === "vi"
+        ? "Bấm 'Tạo Mã QR' để tạo lại mã mới"
+        : "Click 'Generate QR Code' to recreate code";
+    }
+
+    return language === "vi"
+      ? "Bấm 'Tạo Mã QR' để tạo mã"
+      : "Click 'Generate QR Code' to create code";
+  };
+
   const handleGenerateQR = () => {
     if (!qrData.trim()) {
       setErrorMessage(getTranslation(language, "errors.emptyContent"));
@@ -669,38 +688,88 @@ const QRCodeGenerator = () => {
           <textarea
             id="qr-data"
             value={qrData}
-            onChange={(e) => setQrData(e.target.value)}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setQrData(newValue);
+
+              // Tự động reset QR code khi xóa hết nội dung
+              if (!newValue.trim()) {
+                setQrCodeUrl("");
+              }
+            }}
             placeholder={getTranslation(language, "qrContentPlaceholder")}
             rows={3}
           />
 
-          {/* Generate Button */}
-          <button
-            className="btn btn-primary"
-            onClick={handleGenerateQR}
-            disabled={!qrData.trim() || isGenerating}
+          {/* Action Buttons */}
+          <div
+            className="action-buttons"
             style={{
               marginTop: "12px",
-              width: "100%",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
               gap: "8px",
-              minHeight: "44px",
             }}
           >
-            {isGenerating ? (
-              <>
-                <RefreshCw className="animate-spin" size={18} />
-                {getTranslation(language, "generating")}
-              </>
-            ) : (
-              <>
-                <Zap size={18} />
-                {getTranslation(language, "generateQR")}
-              </>
+            <button
+              className="btn btn-primary"
+              onClick={handleGenerateQR}
+              disabled={!qrData.trim() || isGenerating}
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                minHeight: "44px",
+              }}
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="animate-spin" size={18} />
+                  {getTranslation(language, "generating")}
+                </>
+              ) : (
+                <>
+                  <Zap size={18} />
+                  {getTranslation(language, "generateQR")}
+                </>
+              )}
+            </button>
+
+            {(qrData.trim() || qrCodeUrl) && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  // Smooth reset with animation
+                  const overlayCanvas = overlayCanvasRef.current;
+                  if (overlayCanvas) {
+                    overlayCanvas.style.opacity = "0";
+                    setTimeout(() => {
+                      setQrData("");
+                      resetStates();
+                      if (overlayCanvas) {
+                        overlayCanvas.style.opacity = "1";
+                      }
+                    }, 200);
+                  } else {
+                    setQrData("");
+                    resetStates();
+                  }
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  minHeight: "44px",
+                  minWidth: "80px",
+                }}
+                title={language === "vi" ? "Xóa tất cả" : "Clear all"}
+              >
+                ❌ {language === "vi" ? "Xóa" : "Clear"}
+              </button>
             )}
-          </button>
+          </div>
 
           {/* Validation and Error Messages */}
           {validationMessage && (
@@ -977,11 +1046,7 @@ const QRCodeGenerator = () => {
                 }}
               >
                 <Zap size={32} style={{ opacity: 0.5 }} />
-                <span>
-                  {language === "vi"
-                    ? "Nhập nội dung và bấm 'Tạo Mã QR'"
-                    : "Enter content and click 'Generate QR Code'"}
-                </span>
+                <span>{getPlaceholderText()}</span>
               </div>
             )}
 
