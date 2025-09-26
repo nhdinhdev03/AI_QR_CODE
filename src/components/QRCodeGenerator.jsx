@@ -348,7 +348,7 @@ const QRCodeGenerator = () => {
   // Function to check if text is a URL
   const isURL = (text) => {
     if (!text) return false;
-    
+
     try {
       const url = new URL(text);
       // Valid URL object created, do additional checks
@@ -356,15 +356,17 @@ const QRCodeGenerator = () => {
     } catch {
       // Not a valid URL format, check for common URL patterns
       const lowerText = text.toLowerCase().trim();
-      
+
       // Must have at least a domain pattern
       if (!/\w+\.\w{2,}/.test(text)) return false;
-      
+
       return (
         lowerText.startsWith("http://") ||
         lowerText.startsWith("https://") ||
         lowerText.startsWith("www.") ||
-        /\w+\.(com|org|net|edu|gov|io|co|vn|uk|de|fr|jp|cn|in|br|au|ca|us)(\/.*)?\b/i.test(text)
+        /\w+\.(com|org|net|edu|gov|io|co|vn|uk|de|fr|jp|cn|in|br|au|ca|us)(\/.*)?\b/i.test(
+          text
+        )
       );
     }
   };
@@ -372,64 +374,93 @@ const QRCodeGenerator = () => {
   // Helper function to validate URL structure
   const isValidURL = (url) => {
     // Check for valid protocols
-    const validProtocols = ['http:', 'https:', 'ftp:', 'ftps:'];
+    const validProtocols = ["http:", "https:", "ftp:", "ftps:"];
     if (!validProtocols.includes(url.protocol)) return false;
-    
+
     // Check for valid hostname
     if (!url.hostname || url.hostname.length < 3) return false;
-    if (url.hostname === 'localhost' && !url.port) return false;
-    
+    if (url.hostname === "localhost" && !url.port) return false;
+
     // Check for realistic domain patterns
     if (!/^[a-zA-Z0-9.-]+$/.test(url.hostname)) return false;
-    if (url.hostname.startsWith('.') || url.hostname.endsWith('.')) return false;
-    if (url.hostname.includes('..')) return false;
-    
+    if (url.hostname.startsWith(".") || url.hostname.endsWith("."))
+      return false;
+    if (url.hostname.includes("..")) return false;
+
     return true;
   };
 
   // Function to check if text is an email
   const isEmail = (text) => {
     if (!text) return false;
-    
+
     // Handle mailto: prefix
     if (text.startsWith("mailto:")) {
       const emailPart = text.substring(7);
       return isValidEmail(emailPart);
     }
-    
+
     return isValidEmail(text);
   };
 
   // Helper function to validate email structure
   const isValidEmail = (email) => {
     const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    
+
     if (!emailPattern.test(email)) return false;
-    
-    const [localPart, domain] = email.split('@');
-    
+
+    const [localPart, domain] = email.split("@");
+
     // Check for invalid patterns in local part
     if (localPart.length < 1 || localPart.length > 64) return false;
-    if (localPart.startsWith('.') || localPart.endsWith('.')) return false;
-    if (localPart.includes('..')) return false;
-    
+    if (localPart.startsWith(".") || localPart.endsWith(".")) return false;
+    if (localPart.includes("..")) return false;
+
     // Check for invalid patterns in domain
     if (domain.length < 3 || domain.length > 255) return false;
-    if (domain.startsWith('-') || domain.endsWith('-')) return false;
-    if (domain.startsWith('.') || domain.endsWith('.')) return false;
-    
+    if (domain.startsWith("-") || domain.endsWith("-")) return false;
+    if (domain.startsWith(".") || domain.endsWith(".")) return false;
+
     // Check for realistic domain extensions
-    const domainParts = domain.split('.');
+    const domainParts = domain.split(".");
     const tld = domainParts[domainParts.length - 1].toLowerCase();
-    const validTlds = ['com', 'org', 'net', 'edu', 'gov', 'mil', 'int', 'co', 'io', 'me', 'tv', 'cc', 'info', 'biz', 'name', 'asia', 'vn', 'uk', 'de', 'fr', 'jp', 'cn', 'in', 'br', 'au', 'ca', 'us'];
-    
+    const validTlds = [
+      "com",
+      "org",
+      "net",
+      "edu",
+      "gov",
+      "mil",
+      "int",
+      "co",
+      "io",
+      "me",
+      "tv",
+      "cc",
+      "info",
+      "biz",
+      "name",
+      "asia",
+      "vn",
+      "uk",
+      "de",
+      "fr",
+      "jp",
+      "cn",
+      "in",
+      "br",
+      "au",
+      "ca",
+      "us",
+    ];
+
     if (!validTlds.includes(tld) && tld.length < 2) return false;
-    
+
     // Check for repetitive patterns that might be fake
     const emailLower = email.toLowerCase();
     if (/(.{2,})\1{2,}/.test(emailLower)) return false; // Repeated patterns
     if (/^[a-z]\1{4,}@/.test(emailLower)) return false; // Repeated letters in local part
-    
+
     return true;
   };
 
@@ -449,89 +480,174 @@ const QRCodeGenerator = () => {
     return isValidPhoneNumber(cleanText);
   };
 
-  // Helper function to validate phone number structure
+  // Helper function to validate phone number structure with strict rules
   const isValidPhoneNumber = (phone) => {
     if (!phone || phone.length < 7) return false;
 
-    // Check for repeated digits pattern (invalid phone numbers)
-    const repeatedPatterns = [
+    // Check for obviously invalid patterns first
+    const invalidPatterns = [
       /^(\d)\1{6,}$/, // 7+ repeated digits like 1111111, 2222222
       /^(\d)\1{4,}(\d)\2{2,}$/, // Pattern like 11111222, 33333444
-      /^(0)\1{8,}$/, // All zeros like 000000000
-      /^(1)\1{8,}$/, // All ones like 111111111
-      /^(9)\1{8,}$/, // All nines like 999999999
-      /^(\d{2,3})\1{3,}$/, // Repeated patterns like 123123123123, 12121212
+      /^0{2,}|\d*0{4,}/, // Multiple zeros (starting with 00 or 4+ zeros anywhere)
+      /^1{7,}|\d*1{5,}/, // Too many 1s (7+ at start or 5+ anywhere)
+      /^(\d{2,3})\1{2,}$/, // Repeated patterns like 123123123, 12121212
       /^(\d)\1(\d)\2(\d)\3+$/, // Alternating patterns like 121212, 131313
+      /^(\d)\1{2,}/, // 3+ same digits at start
+      /(\d)\1{3,}/, // 4+ same digits anywhere
     ];
 
-    if (repeatedPatterns.some((pattern) => pattern.test(phone))) {
+    if (invalidPatterns.some((pattern) => pattern.test(phone))) {
       return false;
-    }
-
-    // Check for simple repetitive patterns manually
-    if (phone.length >= 10) {
-      // Check if it's just repeating 2-3 digit patterns
-      const twoDigitPattern = phone.substring(0, 2);
-      const threeDigitPattern = phone.substring(0, 3);
-      
-      // Check if the whole string is just repeating 2-digit pattern
-      if (phone.length >= 10 && phone === twoDigitPattern.repeat(Math.floor(phone.length / 2))) {
-        return false;
-      }
-      
-      // Check if the whole string is just repeating 3-digit pattern  
-      if (phone.length >= 12 && phone === threeDigitPattern.repeat(Math.floor(phone.length / 3))) {
-        return false;
-      }
     }
 
     // Check for sequential patterns (like 123456789, 987654321)
-    const sequentialUp = phone
-      .split("")
-      .every(
-        (digit, i) =>
-          i === 0 || parseInt(digit) === (parseInt(phone[i - 1]) + 1) % 10
-      );
-    const sequentialDown = phone
-      .split("")
-      .every(
-        (digit, i) =>
-          i === 0 || parseInt(digit) === (parseInt(phone[i - 1]) - 1 + 10) % 10
-      );
+    if (phone.length >= 7) {
+      const isSequentialUp = phone
+        .split("")
+        .every(
+          (digit, i) =>
+            i === 0 || parseInt(digit) === (parseInt(phone[i - 1]) + 1) % 10
+        );
+      const isSequentialDown = phone
+        .split("")
+        .every(
+          (digit, i) =>
+            i === 0 ||
+            parseInt(digit) === (parseInt(phone[i - 1]) - 1 + 10) % 10
+        );
 
-    if (phone.length >= 8 && (sequentialUp || sequentialDown)) {
+      if (isSequentialUp || isSequentialDown) {
+        return false;
+      }
+    }
+
+    // Specific phone format validation with strict country-based rules
+    let isValidFormat = false;
+
+    // Vietnam phone number validation (very specific)
+    if (/^(\+84|84|0)/.test(phone)) {
+      const cleanPhone = phone.replace(/^(\+84|84)/, "0");
+
+      // Vietnam mobile prefixes (updated 2024)
+      const vietnamMobilePrefixes = [
+        "032",
+        "033",
+        "034",
+        "035",
+        "036",
+        "037",
+        "038",
+        "039", // Viettel
+        "056",
+        "058",
+        "059", // Vietnamobile
+        "070",
+        "076",
+        "077",
+        "078",
+        "079", // Mobifone
+        "081",
+        "082",
+        "083",
+        "084",
+        "085",
+        "086",
+        "088",
+        "089", // Vinaphone
+        "090",
+        "091",
+        "092",
+        "093",
+        "094",
+        "096",
+        "097",
+        "098",
+        "099", // Mobifone, Viettel, Vinaphone
+      ];
+
+      // Vietnam landline prefixes
+      const vietnamLandlinePrefixes = [
+        "024",
+        "028",
+        "020",
+        "023",
+        "025",
+        "026",
+        "027",
+        "029",
+      ];
+
+      const prefix = cleanPhone.substring(0, 3);
+
+      if (vietnamMobilePrefixes.includes(prefix) && cleanPhone.length === 10) {
+        isValidFormat = true;
+      } else if (
+        vietnamLandlinePrefixes.includes(prefix) &&
+        cleanPhone.length === 10
+      ) {
+        isValidFormat = true;
+      }
+    }
+    // US phone number validation
+    else if (/^(\+1|1)?/.test(phone)) {
+      const cleanPhone = phone.replace(/^(\+1|1)/, "");
+      // US format: Area code (2-9) + Exchange (2-9) + Number (4 digits)
+      if (/^[2-9]\d{2}[2-9]\d{2}\d{4}$/.test(cleanPhone)) {
+        isValidFormat = true;
+      }
+    }
+    // UK phone number validation
+    else if (/^(\+44|44|0)/.test(phone)) {
+      const cleanPhone = phone.replace(/^(\+44|44)/, "0");
+      if (/^0[1-9]\d{8,9}$/.test(cleanPhone)) {
+        isValidFormat = true;
+      }
+    }
+    // Other international numbers (with country code)
+    else if (/^\+/.test(phone)) {
+      // Must have country code (1-3 digits) + national number (6-15 digits)
+      if (/^\+\d{1,3}[1-9]\d{6,14}$/.test(phone)) {
+        isValidFormat = true;
+      }
+    }
+    // Reject numbers without clear country context if they're just digits
+    else if (/^\d+$/.test(phone)) {
+      // Only accept if it looks like a valid national number format
+      // Most countries: 7-15 digits, not starting with 0
+      if (/^[1-9]\d{6,14}$/.test(phone)) {
+        isValidFormat = true;
+      }
+    }
+
+    if (!isValidFormat) {
       return false;
     }
 
-    // Enhanced phone patterns for different valid formats
-    const phonePatterns = [
-      /^(\+?\d{1,4})[\s.-]?\(?\d{3,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,6}$/, // International format
-      /^0[3-9]\d{8,9}$/, // Vietnam domestic format (starts with 0, followed by 3-9)
-      /^\+\d{10,15}$/, // Simple international with +
-      /^\d{10,11}$/, // Simple domestic (but needs variety check)
-      /^(\+84|84)[3-9]\d{8}$/, // Vietnam international
-      /^(\+1)[2-9]\d{2}[2-9]\d{2}\d{4}$/, // US format
-      /^(\+44)[1-9]\d{8,9}$/, // UK format
-    ];
+    // Additional validation for digit variety and realistic distribution
+    const digits = phone.replace(/^\+\d{1,3}/, "").replace(/^0/, ""); // Remove country code and leading zero
+    if (digits.length >= 7) {
+      const uniqueDigits = new Set(digits.split("")).size;
 
-    // Additional check for domestic numbers - ensure digit variety and realistic patterns
-    if (/^\d{10,}$/.test(phone)) {
-      const uniqueDigits = new Set(phone.split("")).size;
-      
-      // Need at least 4 different digits for longer numbers
-      if (phone.length >= 12 && uniqueDigits < 4) return false;
-      if (phone.length >= 10 && uniqueDigits < 3) return false;
-      
-      // Check if more than 60% of digits are the same (too repetitive)
+      // Must have at least 3 different digits for phone numbers
+      if (uniqueDigits < 3) return false;
+
+      // Check digit distribution - no digit should appear more than 50% of the time
       const digitCounts = {};
-      for (const digit of phone) {
+      for (const digit of digits) {
         digitCounts[digit] = (digitCounts[digit] || 0) + 1;
       }
       const maxCount = Math.max(...Object.values(digitCounts));
-      if (maxCount / phone.length > 0.6) return false;
+      if (maxCount / digits.length > 0.5) return false;
+
+      // Check for too many consecutive same digits (max 2 in a row)
+      for (let i = 0; i < digits.length - 2; i++) {
+        if (digits[i] === digits[i + 1] && digits[i + 1] === digits[i + 2]) {
+          return false; // No 3+ consecutive same digits
+        }
+      }
     }
 
-    return phonePatterns.some((pattern) => pattern.test(phone));
+    return true;
   };
 
   // Function to check if text is SMS format
@@ -747,16 +863,19 @@ const QRCodeGenerator = () => {
       const randomImage = getRandomImage();
       setSelectedImage(randomImage);
       imageToUse = randomImage;
-      console.log("Auto-selected random image for QR generation:", randomImage?.name);
-      
+      console.log(
+        "Auto-selected random image for QR generation:",
+        randomImage?.name
+      );
+
       // Auto-open image selector to show the selected image
       if (!showImageSelector) {
         setShowImageSelector(true);
       }
-      
+
       // Show brief message about auto-selection
       setSuccessMessage(
-        language === "vi" 
+        language === "vi"
           ? `🎲 Tự động chọn ảnh: ${randomImage?.name}`
           : `🎲 Auto-selected image: ${randomImage?.name}`
       );
@@ -895,7 +1014,14 @@ const QRCodeGenerator = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [qrData, qrOptions, selectedImage, getRandomImage, language, showImageSelector]);
+  }, [
+    qrData,
+    qrOptions,
+    selectedImage,
+    getRandomImage,
+    language,
+    showImageSelector,
+  ]);
 
   // Removed auto-generation useEffect - now manual only
 
