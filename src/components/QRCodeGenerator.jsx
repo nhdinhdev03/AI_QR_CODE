@@ -161,14 +161,14 @@ const QRCodeGenerator = () => {
       return false;
     }
 
-    // Check for meaningful text patterns
+    // Check for meaningful text patterns FIRST
     const meaningfulPatterns = [
       // Contains spaces (likely sentences)
       /\s+/,
-      // Contains common words
-      /(the|and|or|but|in|on|at|to|for|of|with|by|from|up|about|into|over|after|www|http|com|org|net|hello|hi|thank|you)/i,
+      // Contains common English words
+      /\b(the|and|or|but|in|on|at|to|for|of|with|by|from|up|about|into|over|after|www|http|com|org|net|hello|hi|thank|you|this|that|what|when|where|why|how|yes|no)\b/i,
       // Contains Vietnamese words
-      /(và|hoặc|nhưng|trong|trên|tại|để|của|với|bởi|từ|lên|về|vào|qua|sau|xin|chào|cảm|ơn|tôi|bạn|là|có|được)/i,
+      /\b(và|hoặc|nhưng|trong|trên|tại|để|của|với|bởi|từ|lên|về|vào|qua|sau|xin|chào|cảm|ơn|tôi|bạn|là|có|được|một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười)\b/i,
       // Contains numbers with context (like addresses, dates)
       /\d+[\s\-\/]\w+|\w+[\s\-\/]\d+/,
       // Contains punctuation (likely sentences)
@@ -182,23 +182,65 @@ const QRCodeGenerator = () => {
       return true;
     }
 
-    // Check for random character sequences (not meaningful)
+    // Enhanced check for random character sequences (not meaningful)
     const randomPatterns = [
-      // Too many repeated characters
-      /(.)\1{4,}/,
-      // Random consonant clusters without vowels (more than 4 consonants in a row)
-      /[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]{5,}/,
-      // Only keyboard mashing patterns
-      /^[qwertyuiopasdfghjklzxcvbnm]+$/i,
+      // Too many repeated characters (3+ same chars in a row)
+      /(.)\1{2,}/,
+      // Random consonant clusters without vowels (4+ consonants in a row)
+      /[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]{4,}/i,
+      // Keyboard mashing patterns
+      /^[qwertyuiop]+$|^[asdfghjkl]+$|^[zxcvbnm]+$/i,
+      // Vietnamese keyboard mashing with diacritics
+      /^[áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]+$/i,
+      // Mixed random patterns
+      /^[a-zA-Záàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]{1,}[a-zA-Záàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]*$/,
     ];
 
-    // If text matches random patterns, it's not meaningful
-    if (randomPatterns.some((pattern) => pattern.test(text))) {
-      return false;
+    // For short text (less than 4 chars), be more lenient but still check patterns
+    if (text.length < 4) {
+      return !randomPatterns.slice(0, 2).some((pattern) => pattern.test(text));
     }
 
-    // For longer text, check if it has reasonable structure
+    // For medium text (4-7 chars), check for patterns and character variety
+    if (text.length >= 4 && text.length < 8) {
+      // If matches obvious random patterns, not meaningful
+      if (randomPatterns.some((pattern) => pattern.test(text))) {
+        return false;
+      }
+
+      // Check character variety - need at least 2 unique characters for short text
+      const uniqueChars = new Set(text.toLowerCase().split("")).size;
+      if (uniqueChars < 2) return false;
+
+      // Check vowel/consonant balance for letter-only strings
+      if (
+        /^[a-zA-Záàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]+$/i.test(
+          text
+        )
+      ) {
+        const vowelCount = (
+          text.match(
+            /[aeiouáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ]/i
+          ) || []
+        ).length;
+        const totalChars = text.length;
+
+        // If no vowels or too few vowels (less than 25% for short strings), likely not meaningful
+        if (vowelCount === 0 || vowelCount / totalChars < 0.15) {
+          return false;
+        }
+      }
+
+      return true; // Short text that passed basic checks
+    }
+
+    // For longer text (8+ chars), be more strict
     if (text.length >= 8) {
+      // If matches random patterns, not meaningful
+      if (randomPatterns.some((pattern) => pattern.test(text))) {
+        return false;
+      }
+
       // Check digit variety for number strings
       if (/^\d+$/.test(text)) {
         const uniqueDigits = new Set(text.split("")).size;
@@ -206,20 +248,32 @@ const QRCodeGenerator = () => {
       }
 
       // Check character variety for letter strings
-      if (/^[a-zA-Z]+$/.test(text)) {
-        const vowelCount = (text.match(/[aeiouAEIOU]/g) || []).length;
-        const consonantCount = (
-          text.match(/[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]/g) || []
+      if (
+        /^[a-zA-Záàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]+$/i.test(
+          text
+        )
+      ) {
+        const uniqueChars = new Set(text.toLowerCase().split("")).size;
+        const vowelCount = (
+          text.match(
+            /[aeiouáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ]/i
+          ) || []
         ).length;
+        const totalChars = text.length;
 
-        // If extremely unbalanced vowel/consonant ratio, likely random
-        if (vowelCount === 0 && consonantCount > 6) {
+        // Need reasonable character variety (at least 3 unique chars for 8+ char strings)
+        if (uniqueChars < 3) return false;
+
+        // Need some vowels (at least 15% vowels)
+        if (vowelCount === 0 || vowelCount / totalChars < 0.15) {
           return false;
         }
       }
     }
 
-    return true; // Default to meaningful for other cases
+    // If none of the meaningful patterns match and it's not obviously random,
+    // default to NOT meaningful for safety
+    return false;
   };
 
   // Validation functions for different content types
@@ -280,8 +334,8 @@ const QRCodeGenerator = () => {
       // Still valid for QR generation, but suggest better content
       setValidationMessage(
         language === "vi"
-          ? "⚠️ Nội dung có vẻ như chữ/số ngẫu nhiên. Hãy thử nhập URL, email, số điện thoại hoặc văn bản có ý nghĩa"
-          : "⚠️ Content appears random. Try entering URL, email, phone number, or meaningful text"
+          ? "⚠️ Nội dung không có ý nghĩa. Vui lòng nhập URL, email, số điện thoại hoặc văn bản thực tế"
+          : "⚠️ Content appears meaningless. Please enter URL, email, phone number, or real text"
       );
       return { isValid: true, type: "text", meaningful: false };
     }
@@ -293,28 +347,90 @@ const QRCodeGenerator = () => {
 
   // Function to check if text is a URL
   const isURL = (text) => {
+    if (!text) return false;
+    
     try {
-      new URL(text);
-      return true;
+      const url = new URL(text);
+      // Valid URL object created, do additional checks
+      return isValidURL(url);
     } catch {
+      // Not a valid URL format, check for common URL patterns
       const lowerText = text.toLowerCase().trim();
+      
+      // Must have at least a domain pattern
+      if (!/\w+\.\w{2,}/.test(text)) return false;
+      
       return (
-        lowerText.includes("http") ||
-        lowerText.includes("www.") ||
-        lowerText.includes(".com") ||
-        lowerText.includes(".net") ||
-        lowerText.includes(".org") ||
-        lowerText.includes(".io") ||
-        lowerText.includes(".co")
+        lowerText.startsWith("http://") ||
+        lowerText.startsWith("https://") ||
+        lowerText.startsWith("www.") ||
+        /\w+\.(com|org|net|edu|gov|io|co|vn|uk|de|fr|jp|cn|in|br|au|ca|us)(\/.*)?\b/i.test(text)
       );
     }
+  };
+
+  // Helper function to validate URL structure
+  const isValidURL = (url) => {
+    // Check for valid protocols
+    const validProtocols = ['http:', 'https:', 'ftp:', 'ftps:'];
+    if (!validProtocols.includes(url.protocol)) return false;
+    
+    // Check for valid hostname
+    if (!url.hostname || url.hostname.length < 3) return false;
+    if (url.hostname === 'localhost' && !url.port) return false;
+    
+    // Check for realistic domain patterns
+    if (!/^[a-zA-Z0-9.-]+$/.test(url.hostname)) return false;
+    if (url.hostname.startsWith('.') || url.hostname.endsWith('.')) return false;
+    if (url.hostname.includes('..')) return false;
+    
+    return true;
   };
 
   // Function to check if text is an email
   const isEmail = (text) => {
     if (!text) return false;
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailPattern.test(text) || text.startsWith("mailto:");
+    
+    // Handle mailto: prefix
+    if (text.startsWith("mailto:")) {
+      const emailPart = text.substring(7);
+      return isValidEmail(emailPart);
+    }
+    
+    return isValidEmail(text);
+  };
+
+  // Helper function to validate email structure
+  const isValidEmail = (email) => {
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!emailPattern.test(email)) return false;
+    
+    const [localPart, domain] = email.split('@');
+    
+    // Check for invalid patterns in local part
+    if (localPart.length < 1 || localPart.length > 64) return false;
+    if (localPart.startsWith('.') || localPart.endsWith('.')) return false;
+    if (localPart.includes('..')) return false;
+    
+    // Check for invalid patterns in domain
+    if (domain.length < 3 || domain.length > 255) return false;
+    if (domain.startsWith('-') || domain.endsWith('-')) return false;
+    if (domain.startsWith('.') || domain.endsWith('.')) return false;
+    
+    // Check for realistic domain extensions
+    const domainParts = domain.split('.');
+    const tld = domainParts[domainParts.length - 1].toLowerCase();
+    const validTlds = ['com', 'org', 'net', 'edu', 'gov', 'mil', 'int', 'co', 'io', 'me', 'tv', 'cc', 'info', 'biz', 'name', 'asia', 'vn', 'uk', 'de', 'fr', 'jp', 'cn', 'in', 'br', 'au', 'ca', 'us'];
+    
+    if (!validTlds.includes(tld) && tld.length < 2) return false;
+    
+    // Check for repetitive patterns that might be fake
+    const emailLower = email.toLowerCase();
+    if (/(.{2,})\1{2,}/.test(emailLower)) return false; // Repeated patterns
+    if (/^[a-z]\1{4,}@/.test(emailLower)) return false; // Repeated letters in local part
+    
+    return true;
   };
 
   // Function to check if text is a phone number
@@ -344,10 +460,29 @@ const QRCodeGenerator = () => {
       /^(0)\1{8,}$/, // All zeros like 000000000
       /^(1)\1{8,}$/, // All ones like 111111111
       /^(9)\1{8,}$/, // All nines like 999999999
+      /^(\d{2,3})\1{3,}$/, // Repeated patterns like 123123123123, 12121212
+      /^(\d)\1(\d)\2(\d)\3+$/, // Alternating patterns like 121212, 131313
     ];
 
     if (repeatedPatterns.some((pattern) => pattern.test(phone))) {
       return false;
+    }
+
+    // Check for simple repetitive patterns manually
+    if (phone.length >= 10) {
+      // Check if it's just repeating 2-3 digit patterns
+      const twoDigitPattern = phone.substring(0, 2);
+      const threeDigitPattern = phone.substring(0, 3);
+      
+      // Check if the whole string is just repeating 2-digit pattern
+      if (phone.length >= 10 && phone === twoDigitPattern.repeat(Math.floor(phone.length / 2))) {
+        return false;
+      }
+      
+      // Check if the whole string is just repeating 3-digit pattern  
+      if (phone.length >= 12 && phone === threeDigitPattern.repeat(Math.floor(phone.length / 3))) {
+        return false;
+      }
     }
 
     // Check for sequential patterns (like 123456789, 987654321)
@@ -379,10 +514,21 @@ const QRCodeGenerator = () => {
       /^(\+44)[1-9]\d{8,9}$/, // UK format
     ];
 
-    // Additional check for domestic numbers - ensure digit variety
-    if (/^\d{10,11}$/.test(phone)) {
+    // Additional check for domestic numbers - ensure digit variety and realistic patterns
+    if (/^\d{10,}$/.test(phone)) {
       const uniqueDigits = new Set(phone.split("")).size;
-      if (uniqueDigits < 3) return false; // Need at least 3 different digits
+      
+      // Need at least 4 different digits for longer numbers
+      if (phone.length >= 12 && uniqueDigits < 4) return false;
+      if (phone.length >= 10 && uniqueDigits < 3) return false;
+      
+      // Check if more than 60% of digits are the same (too repetitive)
+      const digitCounts = {};
+      for (const digit of phone) {
+        digitCounts[digit] = (digitCounts[digit] || 0) + 1;
+      }
+      const maxCount = Math.max(...Object.values(digitCounts));
+      if (maxCount / phone.length > 0.6) return false;
     }
 
     return phonePatterns.some((pattern) => pattern.test(phone));
@@ -455,8 +601,13 @@ const QRCodeGenerator = () => {
     return "";
   };
 
-  // Function to get success message based on content type
-  const getSuccessMessage = (contentType) => {
+  // Function to get success message based on content type and meaningfulness
+  const getSuccessMessage = (contentType, meaningful = true) => {
+    // Don't show success message for non-meaningful content
+    if (meaningful === false) {
+      return "";
+    }
+
     const messages = {
       url:
         language === "vi"
@@ -484,8 +635,8 @@ const QRCodeGenerator = () => {
           : "📍 LOCATION detected! You can add map images",
       text:
         language === "vi"
-          ? "✅ Nội dung hợp lệ! Có thể thêm hình ảnh meme"
-          : "✅ Valid content! You can add meme images",
+          ? "✅ Nội dung có ý nghĩa! Có thể thêm hình ảnh meme"
+          : "✅ Meaningful content! You can add meme images",
     };
 
     return messages[contentType] || messages.text;
@@ -554,9 +705,11 @@ const QRCodeGenerator = () => {
       const nowIsUrl = validation.type === "url";
       const isValidContent = validation.isValid && validation.type !== "empty";
 
-      // Set success message for valid content
+      // Set success message only for meaningful content
       setSuccessMessage(
-        isValidContent ? getSuccessMessage(validation.type) : ""
+        isValidContent && validation.meaningful !== false
+          ? getSuccessMessage(validation.type, validation.meaningful)
+          : ""
       );
 
       if (nowIsUrl) {
@@ -588,8 +741,32 @@ const QRCodeGenerator = () => {
       return; // Error message already set by validateContent
     }
 
+    // Auto-select random image if none selected and content is valid
+    let imageToUse = selectedImage;
+    if (!selectedImage && validation.isValid) {
+      const randomImage = getRandomImage();
+      setSelectedImage(randomImage);
+      imageToUse = randomImage;
+      console.log("Auto-selected random image for QR generation:", randomImage?.name);
+      
+      // Auto-open image selector to show the selected image
+      if (!showImageSelector) {
+        setShowImageSelector(true);
+      }
+      
+      // Show brief message about auto-selection
+      setSuccessMessage(
+        language === "vi" 
+          ? `🎲 Tự động chọn ảnh: ${randomImage?.name}`
+          : `🎲 Auto-selected image: ${randomImage?.name}`
+      );
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 2000);
+    }
+
     console.log("Generating QR Code with data:", qrData);
-    console.log("Selected image:", selectedImage);
+    console.log("Selected image:", imageToUse);
 
     setIsGenerating(true);
 
@@ -635,7 +812,7 @@ const QRCodeGenerator = () => {
       }
 
       // Add image in the center if selected
-      if (selectedImage) {
+      if (imageToUse) {
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
         const imageSize = Math.min(canvas.width, canvas.height) * 0.2;
@@ -672,7 +849,7 @@ const QRCodeGenerator = () => {
         img.onerror = (err) => {
           console.error(
             "Failed to load center image:",
-            selectedImage?.content,
+            imageToUse?.content,
             err
           );
           try {
@@ -683,7 +860,7 @@ const QRCodeGenerator = () => {
             console.warn("Fallback toDataURL failed after image error:", e);
           }
         };
-        img.src = selectedImage.content;
+        img.src = imageToUse.content;
       } else {
         // No image selected, just set the QR code URL
         const url = overlayCanvas.toDataURL();
@@ -718,7 +895,7 @@ const QRCodeGenerator = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [qrData, qrOptions, selectedImage]);
+  }, [qrData, qrOptions, selectedImage, getRandomImage, language, showImageSelector]);
 
   // Removed auto-generation useEffect - now manual only
 
