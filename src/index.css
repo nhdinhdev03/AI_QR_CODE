@@ -504,6 +504,31 @@ body {
   background: var(--accent-hover);
 }
 
+.url-image-btn {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.url-image-btn:hover {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.url-image-btn:active {
+  transform: translateY(0);
+}
+
 .meme-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -960,9 +985,12 @@ body {
   }
 
   .meme-toggle-btn,
-  .random-meme-btn {
+  .random-meme-btn,
+  .url-image-btn {
     width: 100%;
     padding: 12px 16px;
+    margin-left: 0;
+    margin-top: 8px;
     border-radius: 8px;
     min-height: 44px;
   }
@@ -1125,7 +1153,8 @@ body {
   }
 
   .meme-toggle-btn,
-  .random-meme-btn {
+  .random-meme-btn,
+  .url-image-btn {
     padding: 10px 14px;
     min-height: 40px;
     font-size: 0.85rem;

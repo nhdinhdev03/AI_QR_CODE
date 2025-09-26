@@ -58,6 +58,10 @@ const QRCodeGenerator = () => {
   const [validationMessage, setValidationMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
+  const [showImageUrlInput, setShowImageUrlInput] = useState(false);
+  const [isSelectedImageFromUrl, setIsSelectedImageFromUrl] = useState(false);
 
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
@@ -157,6 +161,149 @@ const QRCodeGenerator = () => {
         return imageCollection;
       default:
         return imageCollection;
+    }
+  };
+
+  // Function to validate image URL
+  const isValidImageUrl = (url) => {
+    if (!url?.trim()) return false;
+
+    try {
+      const urlObj = new URL(url);
+      // Check if it's a valid http/https URL
+      if (!["http:", "https:"].includes(urlObj.protocol)) return false;
+
+      // Check for common image extensions
+      const imageExtensions = [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".webp",
+        ".bmp",
+        ".svg",
+      ];
+      const pathname = urlObj.pathname.toLowerCase();
+
+      // Direct check for extension
+      if (imageExtensions.some((ext) => pathname.endsWith(ext))) return true;
+
+      // Check for common image hosting patterns
+      const imageHosts = [
+        "imgur.com",
+        "i.imgur.com",
+        "images.unsplash.com",
+        "unsplash.com",
+        "drive.google.com",
+        "lh3.googleusercontent.com",
+        "scontent-", // Facebook images
+        "fbcdn.net", // Facebook CDN
+        "instagram.com",
+        "cdninstagram.com",
+        "pbs.twimg.com", // Twitter images
+        "media.giphy.com",
+        "i.giphy.com",
+      ];
+
+      return imageHosts.some((host) => urlObj.hostname.includes(host));
+    } catch {
+      return false;
+    }
+  };
+
+  // Function to load image from URL
+  const loadImageFromUrl = async (url) => {
+    if (!isValidImageUrl(url)) {
+      throw new Error(getTranslation(language, "errors.invalidImageUrl"));
+    }
+
+    setIsLoadingImage(true);
+
+    try {
+      // Create a promise to load the image
+      const imageLoaded = new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous"; // Handle CORS
+
+        img.onload = () => {
+          // Create canvas to convert to base64
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+
+          try {
+            const dataUrl = canvas.toDataURL("image/png");
+            resolve(dataUrl);
+          } catch (error) {
+            reject(new Error(getTranslation(language, "errors.corsError")));
+          }
+        };
+
+        img.onerror = () => {
+          reject(new Error(getTranslation(language, "errors.imageLoadFailed")));
+        };
+
+        // Handle potential CORS issues with a proxy approach
+        const proxyUrl = url.startsWith("http://")
+          ? `https://cors-anywhere.herokuapp.com/${url}`
+          : url;
+
+        img.src = url; // Try direct first
+      });
+
+      const imageData = await imageLoaded;
+
+      // Create image object similar to existing collection
+      const customImage = {
+        content: imageData,
+        name: getTranslation(language, "imageUrl.title"),
+        isCustom: true,
+        originalUrl: url,
+      };
+
+      return customImage;
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoadingImage(false);
+    }
+  };
+
+  // Function to handle image URL input
+  const handleImageUrlSubmit = async () => {
+    if (!imageUrl.trim()) {
+      setErrorMessage(getTranslation(language, "errors.emptyContent"));
+      return;
+    }
+
+    try {
+      setErrorMessage("");
+      const customImage = await loadImageFromUrl(imageUrl.trim());
+
+      // Set as selected image
+      setSelectedImage(customImage);
+
+      // Mark this image as from URL
+      setIsSelectedImageFromUrl(true);
+
+      // Auto-regenerate QR if content exists
+      if (qrData.trim()) {
+        generateQRCode(customImage);
+        // Hide image gallery when using URL image to save space
+        setShowImageSelector(false);
+      }
+
+      setSuccessMessage(getTranslation(language, "imageUrl.successMessage"));
+
+      setTimeout(() => setSuccessMessage(""), 3000);
+
+      // Clear input and hide
+      setImageUrl("");
+      setShowImageUrlInput(false);
+    } catch (error) {
+      setErrorMessage(error.message);
     }
   };
 
@@ -752,20 +899,20 @@ const QRCodeGenerator = () => {
     const messages = {
       url:
         language === "vi"
-          ? "🔗 URL phát hiện! Gallery hình ảnh đã mở tự động"
-          : "🔗 URL detected! Image gallery opened automatically",
+          ? "🔗 URL phát hiện! Nhấn 'Hiển thị hình ảnh' để thêm meme"
+          : "🔗 URL detected! Click 'Show Images' to add meme",
       email:
         language === "vi"
-          ? "📧 EMAIL phát hiện! Gallery hình ảnh đã mở cho bạn"
-          : "📧 EMAIL detected! Image gallery opened for you",
+          ? "📧 EMAIL phát hiện! Có thể thêm hình ảnh bằng cách nhấn 'Hiển thị hình ảnh'"
+          : "📧 EMAIL detected! You can add image by clicking 'Show Images'",
       phone:
         language === "vi"
-          ? "📞 SỐ ĐIỆN THOẠI phát hiện! Gallery hình ảnh đã mở để thêm ảnh liên hệ"
-          : "📞 PHONE detected! Image gallery opened to add contact image",
+          ? "📞 SỐ ĐIỆN THOẠI phát hiện! Thêm ảnh liên hệ bằng cách nhấn 'Hiển thị hình ảnh'"
+          : "📞 PHONE detected! Add contact image by clicking 'Show Images'",
       sms:
         language === "vi"
-          ? "💬 SMS phát hiện! Gallery hình ảnh đã mở để thêm ảnh tin nhắn"
-          : "💬 SMS detected! Image gallery opened to add message image",
+          ? "💬 SMS phát hiện! Thêm ảnh tin nhắn bằng cách nhấn 'Hiển thị hình ảnh'"
+          : "💬 SMS detected! Add message image by clicking 'Show Images'",
       wifi:
         language === "vi"
           ? "📶 WIFI phát hiện! Có thể thêm hình ảnh meme"
@@ -786,9 +933,11 @@ const QRCodeGenerator = () => {
   // Helper function to handle URL content
   const handleUrlContent = React.useCallback(() => {
     if (!prevIsUrlRef.current) {
-      setShowImageSelector(true);
+      // Don't auto-open gallery for performance - only open when user clicks
+      // setShowImageSelector(true);
       const randomImage = getRandomImage();
       setSelectedImage(randomImage);
+      setIsSelectedImageFromUrl(false);
     }
   }, []);
 
@@ -804,24 +953,26 @@ const QRCodeGenerator = () => {
         validation.type
       );
 
-      if (shouldAutoOpenGallery && !showImageSelector) {
-        setShowImageSelector(true);
-        console.log(`Auto-opened gallery for ${validation.type}: ${text}`);
+      // Don't auto-open gallery for performance - let user decide when to open
+      // if (shouldAutoOpenGallery && !showImageSelector) {
+      //   setShowImageSelector(true);
+      //   console.log(`Auto-opened gallery for ${validation.type}: ${text}`);
 
-        if (!selectedImage) {
-          setTimeout(() => {
-            const contextualImages = getContextualImages(validation.type);
-            const suggestedImage =
-              contextualImages[
-                Math.floor(Math.random() * contextualImages.length)
-              ];
-            setSelectedImage(suggestedImage);
-            console.log(
-              `Auto-suggested image for ${validation.type}: ${suggestedImage.name}`
-            );
-          }, 500);
-        }
+      if (shouldAutoOpenGallery && !selectedImage) {
+        setTimeout(() => {
+          const contextualImages = getContextualImages(validation.type);
+          const suggestedImage =
+            contextualImages[
+              Math.floor(Math.random() * contextualImages.length)
+            ];
+          setSelectedImage(suggestedImage);
+          setIsSelectedImageFromUrl(false);
+          console.log(
+            `Auto-suggested image for ${validation.type}: ${suggestedImage.name}`
+          );
+        }, 500);
       }
+      // }
     },
     [showImageSelector, selectedImage]
   );
@@ -833,6 +984,7 @@ const QRCodeGenerator = () => {
     setSuccessMessage("");
     setShowImageSelector(false);
     setSelectedImage(null);
+    setIsSelectedImageFromUrl(false);
     setQrCodeUrl(""); // Reset QR code URL to show placeholder
     prevIsUrlRef.current = false;
   }, []);
@@ -888,6 +1040,7 @@ const QRCodeGenerator = () => {
       if (!selectedImage && validation.isValid) {
         const randomImage = getRandomImage();
         setSelectedImage(randomImage);
+        setIsSelectedImageFromUrl(false);
         imageToUse = randomImage;
         console.log(
           "Auto-selected random image for QR generation:",
@@ -1435,6 +1588,7 @@ const QRCodeGenerator = () => {
                 const shouldAutoRegenerate = qrCodeUrl && qrData.trim();
 
                 setSelectedImage(newRandomImage);
+                setIsSelectedImageFromUrl(false);
 
                 // Auto-regenerate QR if needed - pass image directly
                 if (shouldAutoRegenerate) {
@@ -1468,9 +1622,93 @@ const QRCodeGenerator = () => {
             >
               🎲 {getTranslation(language, "random")}
             </button>
+            <button
+              className="url-image-btn"
+              onClick={() => setShowImageUrlInput(!showImageUrlInput)}
+              title={getTranslation(language, "imageUrl.tooltip")}
+              style={{
+                background: showImageUrlInput
+                  ? "var(--primary-color)"
+                  : "var(--secondary-color)",
+                color: showImageUrlInput ? "white" : "var(--text-color)",
+              }}
+            >
+              🔗 {getTranslation(language, "imageUrl.title")}
+            </button>
           </div>
 
-          {showImageSelector && qrData.trim() && (
+          {/* Image URL Input Section */}
+          {showImageUrlInput && qrData.trim() && (
+            <div
+              className="image-url-section"
+              style={{
+                marginTop: "10px",
+                padding: "15px",
+                background: "var(--card-background)",
+                borderRadius: "12px",
+                border: "2px solid var(--border-color)",
+              }}
+            >
+              <h4 style={{ marginBottom: "10px", color: "var(--text-color)" }}>
+                🔗 {getTranslation(language, "imageUrl.inputTitle")}
+              </h4>
+              <div
+                style={{ display: "flex", gap: "10px", alignItems: "center" }}
+              >
+                <input
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder={getTranslation(language, "imageUrl.placeholder")}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "2px solid var(--border-color)",
+                    background: "var(--input-background)",
+                    color: "var(--text-color)",
+                    fontSize: "14px",
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleImageUrlSubmit();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handleImageUrlSubmit}
+                  disabled={!imageUrl.trim() || isLoadingImage}
+                  style={{
+                    padding: "10px 15px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: isLoadingImage
+                      ? "var(--border-color)"
+                      : "var(--primary-color)",
+                    color: "white",
+                    cursor: isLoadingImage ? "not-allowed" : "pointer",
+                    fontSize: "14px",
+                    minWidth: "80px",
+                  }}
+                >
+                  {isLoadingImage
+                    ? "⏳"
+                    : getTranslation(language, "imageUrl.loadButton")}
+                </button>
+              </div>
+              <div
+                style={{
+                  marginTop: "8px",
+                  fontSize: "12px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                💡 {getTranslation(language, "imageUrl.supported")}
+              </div>
+            </div>
+          )}
+
+          {showImageSelector && qrData.trim() && !isSelectedImageFromUrl && (
             <div className="media-grid">
               {imageCollection.map((image, index) => (
                 <button
@@ -1481,6 +1719,9 @@ const QRCodeGenerator = () => {
                   onClick={() => {
                     const shouldAutoRegenerate = qrCodeUrl && qrData.trim();
                     setSelectedImage(image);
+
+                    // Mark this image as from gallery (not URL)
+                    setIsSelectedImageFromUrl(false);
 
                     // Auto-regenerate QR if already exists
                     if (shouldAutoRegenerate) {
@@ -1524,6 +1765,7 @@ const QRCodeGenerator = () => {
                 onClick={() => {
                   const shouldAutoRegenerate = qrCodeUrl && qrData.trim();
                   setSelectedImage(null);
+                  setIsSelectedImageFromUrl(false);
 
                   // Auto-regenerate QR without image if already exists
                   if (shouldAutoRegenerate) {

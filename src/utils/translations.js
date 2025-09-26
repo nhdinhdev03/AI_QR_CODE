@@ -103,6 +103,10 @@ export const translations = {
         "🌐 Network error. Please check your internet connection and try again.",
       canvasError:
         "🖼️ Canvas rendering error. Please refresh the page and try again.",
+      invalidImageUrl: "❌ Invalid URL or not an image",
+      imageLoadFailed: "❌ Failed to load image. Check URL.",
+      corsError:
+        "❌ CORS error loading image. Try image from different source.",
     },
 
     // ✅ Content Validation Messages
@@ -115,6 +119,19 @@ export const translations = {
         "📶 Valid WiFi configuration detected - Easy network sharing!",
       geoDetected:
         "📍 Valid location coordinates detected - Perfect for navigation!",
+    },
+
+    // 🖼️ Image URL Feature
+    imageUrl: {
+      title: "Image URL",
+      inputTitle: "Enter Image URL",
+      placeholder: "Paste image URL from Google, Facebook, Instagram...",
+      loadButton: "Load",
+      loading: "Loading...",
+      successMessage: "✅ Successfully loaded image from URL!",
+      supported:
+        "Supports images from: Google Images, Facebook, Instagram, Imgur, Unsplash...",
+      tooltip: "Enter image URL from Google, Facebook...",
     },
   },
 
@@ -217,6 +234,9 @@ export const translations = {
       networkError:
         "🌐 Lỗi mạng. Vui lòng kiểm tra kết nối internet và thử lại.",
       canvasError: "🖼️ Lỗi hiển thị canvas. Vui lòng tải lại trang và thử lại.",
+      invalidImageUrl: "❌ URL không hợp lệ hoặc không phải là ảnh",
+      imageLoadFailed: "❌ Không thể tải ảnh. Kiểm tra lại URL.",
+      corsError: "❌ Có lỗi CORS khi tải ảnh. Thử ảnh từ nguồn khác.",
     },
 
     // ✅ Thông Báo Xác Thực Nội Dung
@@ -230,6 +250,19 @@ export const translations = {
       wifiDetected: "📶 Phát hiện cấu hình WiFi hợp lệ - Dễ dàng chia sẻ mạng!",
       geoDetected:
         "📍 Phát hiện tọa độ vị trí hợp lệ - Hoàn hảo cho điều hướng!",
+    },
+
+    // 🖼️ Tính Năng URL Ảnh
+    imageUrl: {
+      title: "URL Ảnh",
+      inputTitle: "Nhập URL Hình Ảnh",
+      placeholder: "Dán URL ảnh từ Google, Facebook, Instagram...",
+      loadButton: "Tải",
+      loading: "Đang tải...",
+      successMessage: "✅ Đã tải ảnh từ URL thành công!",
+      supported:
+        "Hỗ trợ ảnh từ: Google Images, Facebook, Instagram, Imgur, Unsplash...",
+      tooltip: "Nhập URL ảnh từ Google, Facebook...",
     },
   },
 };
