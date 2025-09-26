@@ -25,15 +25,9 @@ export const ThemeProvider = ({ children }) => {
       console.warn("Error reading theme from localStorage:", error);
     }
 
-    // Fallback to system preference
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    document.documentElement.setAttribute(
-      "data-theme",
-      prefersDark ? "dark" : "light"
-    );
-    return prefersDark;
+    // Default to dark theme
+    document.documentElement.setAttribute("data-theme", "dark");
+    return true;
   });
 
   const [language, setLanguage] = useState(() => {
