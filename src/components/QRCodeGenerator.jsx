@@ -110,9 +110,24 @@ const QRCodeGenerator = () => {
     { content: imgMain, name: "Meme 31" },
   ];
 
-  // Function to get random image
-  const getRandomImage = () => {
-    return imageCollection[Math.floor(Math.random() * imageCollection.length)];
+  // Function to get random image with auto-regeneration
+  const getRandomImage = (autoRegenerate = false) => {
+    const randomImage =
+      imageCollection[Math.floor(Math.random() * imageCollection.length)];
+
+    // If auto-regenerate is true and we have existing QR code, regenerate it
+    if (autoRegenerate && qrCodeUrl && qrData.trim()) {
+      console.log(
+        "Auto-regenerating QR with new random image:",
+        randomImage.name
+      );
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        generateQRCode();
+      }, 100);
+    }
+
+    return randomImage;
   };
 
   // Function to get contextual image suggestions based on content type
@@ -1401,7 +1416,31 @@ const QRCodeGenerator = () => {
             </button>
             <button
               className="random-meme-btn"
-              onClick={() => setSelectedImage(getRandomImage())}
+              onClick={() => {
+                const newRandomImage = getRandomImage(qrCodeUrl ? true : false);
+                setSelectedImage(newRandomImage);
+
+                // Show feedback message about random selection
+                if (qrCodeUrl) {
+                  setSuccessMessage(
+                    language === "vi"
+                      ? `🎲 Đã chọn ảnh ngẫu nhiên: ${newRandomImage.name} và tạo lại QR!`
+                      : `🎲 Random image selected: ${newRandomImage.name} and QR regenerated!`
+                  );
+                  setTimeout(() => {
+                    setSuccessMessage("");
+                  }, 3000);
+                } else {
+                  setSuccessMessage(
+                    language === "vi"
+                      ? `🎲 Đã chọn ảnh ngẫu nhiên: ${newRandomImage.name}`
+                      : `🎲 Random image selected: ${newRandomImage.name}`
+                  );
+                  setTimeout(() => {
+                    setSuccessMessage("");
+                  }, 2000);
+                }
+              }}
               title={getTranslation(language, "random")}
               disabled={!qrData.trim()}
               style={{
@@ -1421,7 +1460,30 @@ const QRCodeGenerator = () => {
                   className={`media-btn image ${
                     selectedImage?.content === image.content ? "selected" : ""
                   }`}
-                  onClick={() => setSelectedImage(image)}
+                  onClick={() => {
+                    setSelectedImage(image);
+
+                    // Auto-regenerate QR if already exists
+                    if (qrCodeUrl && qrData.trim()) {
+                      console.log(
+                        "Auto-regenerating QR with selected image:",
+                        image.name
+                      );
+                      setTimeout(() => {
+                        generateQRCode();
+                      }, 100);
+
+                      // Show feedback
+                      setSuccessMessage(
+                        language === "vi"
+                          ? `🖼️ Đã chọn ${image.name} và tạo lại QR!`
+                          : `🖼️ Selected ${image.name} and regenerated QR!`
+                      );
+                      setTimeout(() => {
+                        setSuccessMessage("");
+                      }, 2500);
+                    }
+                  }}
                   title={image.name}
                 >
                   <div className="media-image-container">
@@ -1441,7 +1503,27 @@ const QRCodeGenerator = () => {
               ))}
               <button
                 className={`media-btn ${!selectedImage ? "selected" : ""}`}
-                onClick={() => setSelectedImage(null)}
+                onClick={() => {
+                  setSelectedImage(null);
+
+                  // Auto-regenerate QR without image if already exists
+                  if (qrCodeUrl && qrData.trim()) {
+                    console.log("Auto-regenerating QR without image");
+                    setTimeout(() => {
+                      generateQRCode();
+                    }, 100);
+
+                    // Show feedback
+                    setSuccessMessage(
+                      language === "vi"
+                        ? "❌ Đã xóa ảnh và tạo lại QR không có ảnh!"
+                        : "❌ Removed image and regenerated QR without image!"
+                    );
+                    setTimeout(() => {
+                      setSuccessMessage("");
+                    }, 2500);
+                  }
+                }}
                 title={getTranslation(language, "none")}
               >
                 <span className="media-emoji">❌</span>
