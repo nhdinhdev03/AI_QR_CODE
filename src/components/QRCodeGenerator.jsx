@@ -196,6 +196,13 @@ const QRCodeGenerator = () => {
         "unsplash.com",
         "drive.google.com",
         "lh3.googleusercontent.com",
+        "encrypted-tbn0.gstatic.com", // Google Images
+        "encrypted-tbn1.gstatic.com", // Google Images
+        "encrypted-tbn2.gstatic.com", // Google Images
+        "encrypted-tbn3.gstatic.com", // Google Images
+        "gstatic.com", // Google static content
+        "ggpht.com", // Google Photos
+        "googleusercontent.com", // Google User Content
         "scontent-", // Facebook images
         "fbcdn.net", // Facebook CDN
         "instagram.com",
@@ -203,9 +210,24 @@ const QRCodeGenerator = () => {
         "pbs.twimg.com", // Twitter images
         "media.giphy.com",
         "i.giphy.com",
+        "wikimedia.org", // Wikipedia images
+        "pinimg.com", // Pinterest images
+        "ytimg.com", // YouTube thumbnails
       ];
 
-      return imageHosts.some((host) => urlObj.hostname.includes(host));
+      // Check if hostname matches any image host
+      const hostnameMatch = imageHosts.some((host) =>
+        urlObj.hostname.includes(host)
+      );
+
+      // Additional checks for image-related query parameters or paths
+      const hasImageParams =
+        /[?&](q=tbn|imgurl|src|image|img|photo|picture)/i.test(url);
+      const hasImagePath = /\/(images?|img|photos?|pictures?|media)\//i.test(
+        urlObj.pathname
+      );
+
+      return hostnameMatch || hasImageParams || hasImagePath;
     } catch {
       return false;
     }
@@ -220,50 +242,98 @@ const QRCodeGenerator = () => {
     setIsLoadingImage(true);
 
     try {
-      // Create a promise to load the image
-      const imageLoaded = new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous"; // Handle CORS
+      // Multiple fallback strategies for CORS issues
+      const loadStrategies = [
+        // Strategy 1: Direct load with crossOrigin
+        () =>
+          new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
 
-        img.onload = () => {
-          // Create canvas to convert to base64
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
+            img.onload = () => {
+              try {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                const dataUrl = canvas.toDataURL("image/png");
+                resolve(dataUrl);
+              } catch (error) {
+                reject(new Error("Canvas conversion failed"));
+              }
+            };
 
-          try {
-            const dataUrl = canvas.toDataURL("image/png");
-            resolve(dataUrl);
-          } catch (error) {
-            reject(new Error(getTranslation(language, "errors.corsError")));
-          }
-        };
+            img.onerror = () => reject(new Error("Direct load failed"));
+            img.src = url;
+          }),
 
-        img.onerror = () => {
-          reject(new Error(getTranslation(language, "errors.imageLoadFailed")));
-        };
+        // Strategy 2: Use allorigins.win proxy
+        () =>
+          new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
 
-        // Handle potential CORS issues with a proxy approach
-        const proxyUrl = url.startsWith("http://")
-          ? `https://cors-anywhere.herokuapp.com/${url}`
-          : url;
+            img.onload = () => {
+              try {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                const dataUrl = canvas.toDataURL("image/png");
+                resolve(dataUrl);
+              } catch (error) {
+                reject(new Error("Proxy canvas conversion failed"));
+              }
+            };
 
-        img.src = url; // Try direct first
-      });
+            img.onerror = () => reject(new Error("Proxy load failed"));
+            img.src = `https://api.allorigins.win/raw?url=${encodeURIComponent(
+              url
+            )}`;
+          }),
 
-      const imageData = await imageLoaded;
+        // Strategy 3: Fetch API approach
+        () =>
+          fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`)
+            .then((response) => {
+              if (!response.ok) throw new Error("Fetch failed");
+              return response.blob();
+            })
+            .then((blob) => {
+              return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error("FileReader failed"));
+                reader.readAsDataURL(blob);
+              });
+            }),
+      ];
 
-      // Create image object similar to existing collection
-      const customImage = {
-        content: imageData,
-        name: getTranslation(language, "imageUrl.title"),
-        isCustom: true,
-        originalUrl: url,
-      };
+      // Try each strategy in order
+      let lastError;
+      for (const strategy of loadStrategies) {
+        try {
+          const imageData = await strategy();
 
-      return customImage;
+          // Create image object similar to existing collection
+          const customImage = {
+            content: imageData,
+            name: getTranslation(language, "imageUrl.title"),
+            isCustom: true,
+            originalUrl: url,
+          };
+
+          return customImage;
+        } catch (error) {
+          lastError = error;
+          console.warn(`Strategy failed:`, error.message);
+        }
+      }
+
+      // If all strategies failed
+      throw new Error(getTranslation(language, "errors.corsError"));
     } catch (error) {
       throw error;
     } finally {
