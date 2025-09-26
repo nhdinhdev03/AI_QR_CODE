@@ -135,6 +135,93 @@ const QRCodeGenerator = () => {
     }
   };
 
+  // Helper function to check if text contains meaningful content
+  const isMeaningfulContent = (text) => {
+    if (!text?.trim()) return false;
+
+    // Check if it's structured data (URL, email, phone, etc.)
+    if (
+      isURL(text) ||
+      isEmail(text) ||
+      isPhone(text) ||
+      isSMS(text) ||
+      isWiFi(text) ||
+      isGeo(text)
+    ) {
+      return true;
+    }
+
+    // Check for repeated digit patterns (not meaningful)
+    const repeatedDigitPatterns = [
+      /^(\d)\1{6,}$/, // 7+ repeated digits like 1111111, 2222222
+      /^\d{10,}$/, // Long strings of only digits
+    ];
+
+    if (repeatedDigitPatterns.some((pattern) => pattern.test(text))) {
+      return false;
+    }
+
+    // Check for meaningful text patterns
+    const meaningfulPatterns = [
+      // Contains spaces (likely sentences)
+      /\s+/,
+      // Contains common words
+      /(the|and|or|but|in|on|at|to|for|of|with|by|from|up|about|into|over|after|www|http|com|org|net|hello|hi|thank|you)/i,
+      // Contains Vietnamese words
+      /(và|hoặc|nhưng|trong|trên|tại|để|của|với|bởi|từ|lên|về|vào|qua|sau|xin|chào|cảm|ơn|tôi|bạn|là|có|được)/i,
+      // Contains numbers with context (like addresses, dates)
+      /\d+[\s\-\/]\w+|\w+[\s\-\/]\d+/,
+      // Contains punctuation (likely sentences)
+      /[.!?,:;]/,
+      // Contains common prefixes/suffixes
+      /(www\.|https?:\/\/|@|\+\d|#|\$)/i,
+    ];
+
+    // If text matches meaningful patterns, it's considered meaningful
+    if (meaningfulPatterns.some((pattern) => pattern.test(text))) {
+      return true;
+    }
+
+    // Check for random character sequences (not meaningful)
+    const randomPatterns = [
+      // Too many repeated characters
+      /(.)\1{4,}/,
+      // Random consonant clusters without vowels (more than 4 consonants in a row)
+      /[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]{5,}/,
+      // Only keyboard mashing patterns
+      /^[qwertyuiopasdfghjklzxcvbnm]+$/i,
+    ];
+
+    // If text matches random patterns, it's not meaningful
+    if (randomPatterns.some((pattern) => pattern.test(text))) {
+      return false;
+    }
+
+    // For longer text, check if it has reasonable structure
+    if (text.length >= 8) {
+      // Check digit variety for number strings
+      if (/^\d+$/.test(text)) {
+        const uniqueDigits = new Set(text.split("")).size;
+        if (uniqueDigits < 3) return false; // Need at least 3 different digits
+      }
+
+      // Check character variety for letter strings
+      if (/^[a-zA-Z]+$/.test(text)) {
+        const vowelCount = (text.match(/[aeiouAEIOU]/g) || []).length;
+        const consonantCount = (
+          text.match(/[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]/g) || []
+        ).length;
+
+        // If extremely unbalanced vowel/consonant ratio, likely random
+        if (vowelCount === 0 && consonantCount > 6) {
+          return false;
+        }
+      }
+    }
+
+    return true; // Default to meaningful for other cases
+  };
+
   // Validation functions for different content types
   const validateContent = (text) => {
     if (!text?.trim()) {
@@ -154,41 +241,54 @@ const QRCodeGenerator = () => {
     // Check different content types
     if (isURL(text)) {
       setValidationMessage(getTranslation(language, "validation.urlDetected"));
-      return { isValid: true, type: "url" };
+      return { isValid: true, type: "url", meaningful: true };
     }
 
     if (isEmail(text)) {
       setValidationMessage(
         getTranslation(language, "validation.emailDetected")
       );
-      return { isValid: true, type: "email" };
+      return { isValid: true, type: "email", meaningful: true };
     }
 
     if (isPhone(text)) {
       setValidationMessage(
         getTranslation(language, "validation.phoneDetected")
       );
-      return { isValid: true, type: "phone" };
+      return { isValid: true, type: "phone", meaningful: true };
     }
 
     if (isSMS(text)) {
       setValidationMessage(getTranslation(language, "validation.smsDetected"));
-      return { isValid: true, type: "sms" };
+      return { isValid: true, type: "sms", meaningful: true };
     }
 
     if (isWiFi(text)) {
       setValidationMessage(getTranslation(language, "validation.wifiDetected"));
-      return { isValid: true, type: "wifi" };
+      return { isValid: true, type: "wifi", meaningful: true };
     }
 
     if (isGeo(text)) {
       setValidationMessage(getTranslation(language, "validation.geoDetected"));
-      return { isValid: true, type: "geo" };
+      return { isValid: true, type: "geo", meaningful: true };
     }
 
-    // Valid content but no specific type detected
+    // Check if content is meaningful
+    const meaningful = isMeaningfulContent(text);
+
+    if (!meaningful) {
+      // Still valid for QR generation, but suggest better content
+      setValidationMessage(
+        language === "vi"
+          ? "⚠️ Nội dung có vẻ như chữ/số ngẫu nhiên. Hãy thử nhập URL, email, số điện thoại hoặc văn bản có ý nghĩa"
+          : "⚠️ Content appears random. Try entering URL, email, phone number, or meaningful text"
+      );
+      return { isValid: true, type: "text", meaningful: false };
+    }
+
+    // Valid and meaningful content
     setValidationMessage("");
-    return { isValid: true, type: "text" };
+    return { isValid: true, type: "text", meaningful: true };
   };
 
   // Function to check if text is a URL
@@ -224,22 +324,68 @@ const QRCodeGenerator = () => {
     // Remove all spaces, dots, dashes for better validation
     const cleanText = text.replace(/[\s.-]/g, "");
 
-    // Check for tel: prefix
-    if (text.startsWith("tel:")) return true;
+    // Check for tel: prefix (always valid if properly formatted)
+    if (text.startsWith("tel:")) {
+      const phoneNumber = text.substring(4);
+      return isValidPhoneNumber(phoneNumber);
+    }
 
-    // Enhanced phone patterns for different formats
-    const phonePatterns = [
-      /^(\+?\d{1,4})?[\s.-]?\(?\d{3,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,6}$/, // International format
-      /^0\d{9,11}$/, // Domestic format (Vietnam, etc)
-      /^\+\d{10,15}$/, // Simple international with +
-      /^\d{10,11}$/, // Simple domestic
-      /^(\+84|84|0)[3-9]\d{8}$/, // Vietnam specific
+    return isValidPhoneNumber(cleanText);
+  };
+
+  // Helper function to validate phone number structure
+  const isValidPhoneNumber = (phone) => {
+    if (!phone || phone.length < 7) return false;
+
+    // Check for repeated digits pattern (invalid phone numbers)
+    const repeatedPatterns = [
+      /^(\d)\1{6,}$/, // 7+ repeated digits like 1111111, 2222222
+      /^(\d)\1{4,}(\d)\2{2,}$/, // Pattern like 11111222, 33333444
+      /^(0)\1{8,}$/, // All zeros like 000000000
+      /^(1)\1{8,}$/, // All ones like 111111111
+      /^(9)\1{8,}$/, // All nines like 999999999
     ];
 
-    return (
-      phonePatterns.some((pattern) => pattern.test(cleanText)) ||
-      phonePatterns.some((pattern) => pattern.test(text))
-    );
+    if (repeatedPatterns.some((pattern) => pattern.test(phone))) {
+      return false;
+    }
+
+    // Check for sequential patterns (like 123456789, 987654321)
+    const sequentialUp = phone
+      .split("")
+      .every(
+        (digit, i) =>
+          i === 0 || parseInt(digit) === (parseInt(phone[i - 1]) + 1) % 10
+      );
+    const sequentialDown = phone
+      .split("")
+      .every(
+        (digit, i) =>
+          i === 0 || parseInt(digit) === (parseInt(phone[i - 1]) - 1 + 10) % 10
+      );
+
+    if (phone.length >= 8 && (sequentialUp || sequentialDown)) {
+      return false;
+    }
+
+    // Enhanced phone patterns for different valid formats
+    const phonePatterns = [
+      /^(\+?\d{1,4})[\s.-]?\(?\d{3,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,6}$/, // International format
+      /^0[3-9]\d{8,9}$/, // Vietnam domestic format (starts with 0, followed by 3-9)
+      /^\+\d{10,15}$/, // Simple international with +
+      /^\d{10,11}$/, // Simple domestic (but needs variety check)
+      /^(\+84|84)[3-9]\d{8}$/, // Vietnam international
+      /^(\+1)[2-9]\d{2}[2-9]\d{2}\d{4}$/, // US format
+      /^(\+44)[1-9]\d{8,9}$/, // UK format
+    ];
+
+    // Additional check for domestic numbers - ensure digit variety
+    if (/^\d{10,11}$/.test(phone)) {
+      const uniqueDigits = new Set(phone.split("")).size;
+      if (uniqueDigits < 3) return false; // Need at least 3 different digits
+    }
+
+    return phonePatterns.some((pattern) => pattern.test(phone));
   };
 
   // Function to check if text is SMS format
@@ -357,6 +503,11 @@ const QRCodeGenerator = () => {
   // Helper function to handle other valid content types
   const handleOtherValidContent = React.useCallback(
     (validation, text) => {
+      // Only auto-open gallery for meaningful content
+      if (validation.meaningful === false) {
+        return; // Don't auto-open gallery for non-meaningful content
+      }
+
       const shouldAutoOpenGallery = ["phone", "sms", "email"].includes(
         validation.type
       );

@@ -27,7 +27,11 @@ export const translations = {
     hideImages: "Hide Images",
     showImages: "Show Images",
     random: "Random",
+    randomSelected: "Random image selected!",
     none: "None",
+    noImageSelected: "No image selected",
+    selectAnImage: "Select an image",
+    imageCleared: "Image selection cleared",
     urlDetected: "URL detected! Image gallery opened automatically",
     enterContentFirst: "Please enter content first to add images",
 
@@ -126,7 +130,11 @@ export const translations = {
     hideImages: "Ẩn Hình Ảnh",
     showImages: "Hiện Hình Ảnh",
     random: "Ngẫu Nhiên",
+    randomSelected: "Đã chọn hình ảnh ngẫu nhiên!",
     none: "Không",
+    noImageSelected: "Chưa chọn hình ảnh",
+    selectAnImage: "Chọn một hình ảnh",
+    imageCleared: "Đã xóa lựa chọn hình ảnh",
     urlDetected: "🔗 Phát hiện URL! Gallery hình ảnh đã mở tự động",
     enterContentFirst: "Vui lòng nhập nội dung trước để thêm hình ảnh",
 
