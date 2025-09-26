@@ -111,21 +111,31 @@ const QRCodeGenerator = () => {
   ];
 
   // Function to get random image with auto-regeneration
-  const getRandomImage = (autoRegenerate = false) => {
-    const randomImage =
-      imageCollection[Math.floor(Math.random() * imageCollection.length)];
+  const getRandomImage = (autoRegenerate = false, excludeCurrent = false) => {
+    let randomImage;
 
-    // If auto-regenerate is true and we have existing QR code, regenerate it
-    if (autoRegenerate && qrCodeUrl && qrData.trim()) {
-      console.log(
-        "Auto-regenerating QR with new random image:",
-        randomImage.name
+    if (excludeCurrent && selectedImage) {
+      // Get list of images excluding current selected image
+      const availableImages = imageCollection.filter(
+        (img) => img.content !== selectedImage.content
       );
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        generateQRCode();
-      }, 100);
+
+      // If we have other images to choose from, pick from them
+      if (availableImages.length > 0) {
+        randomImage =
+          availableImages[Math.floor(Math.random() * availableImages.length)];
+      } else {
+        // Fallback to any random image if somehow all images are the same
+        randomImage =
+          imageCollection[Math.floor(Math.random() * imageCollection.length)];
+      }
+    } else {
+      // Normal random selection
+      randomImage =
+        imageCollection[Math.floor(Math.random() * imageCollection.length)];
     }
+
+    // Note: Auto-regeneration is handled in the onClick handler after state update
 
     return randomImage;
   };
@@ -860,183 +870,186 @@ const QRCodeGenerator = () => {
   // Suggestions for QR code content
   const suggestions = getTranslation(language, "suggestions");
 
-  const generateQRCode = useCallback(async () => {
-    if (!qrData.trim()) {
-      setQrCodeUrl("");
-      return;
-    }
-
-    // Validate content before generating
-    const validation = validateContent(qrData);
-    if (!validation.isValid) {
-      return; // Error message already set by validateContent
-    }
-
-    // Auto-select random image if none selected and content is valid
-    let imageToUse = selectedImage;
-    if (!selectedImage && validation.isValid) {
-      const randomImage = getRandomImage();
-      setSelectedImage(randomImage);
-      imageToUse = randomImage;
-      console.log(
-        "Auto-selected random image for QR generation:",
-        randomImage?.name
-      );
-
-      // Auto-open image selector to show the selected image
-      if (!showImageSelector) {
-        setShowImageSelector(true);
-      }
-
-      // Show brief message about auto-selection
-      setSuccessMessage(
-        language === "vi"
-          ? `🎲 Tự động chọn ảnh: ${randomImage?.name}`
-          : `🎲 Auto-selected image: ${randomImage?.name}`
-      );
-      setTimeout(() => {
-        setSuccessMessage("");
-      }, 2000);
-    }
-
-    console.log("Generating QR Code with data:", qrData);
-    console.log("Selected image:", imageToUse);
-
-    setIsGenerating(true);
-
-    // Add generating animation
-    const overlayCanvas = overlayCanvasRef.current;
-    if (overlayCanvas) {
-      overlayCanvas.className = "qr-canvas-display generating";
-    }
-
-    try {
-      const canvas = canvasRef.current;
-
-      if (!canvas) {
-        console.error("Canvas ref is null");
+  const generateQRCode = useCallback(
+    async (imageOverride = null) => {
+      if (!qrData.trim()) {
+        setQrCodeUrl("");
         return;
       }
 
-      if (!overlayCanvas) {
-        console.error("Overlay canvas ref is null");
-        return;
+      // Validate content before generating
+      const validation = validateContent(qrData);
+      if (!validation.isValid) {
+        return; // Error message already set by validateContent
       }
 
-      console.log("Canvas and overlay canvas are ready");
+      // Use override image if provided, otherwise use selectedImage
+      let imageToUse = imageOverride !== null ? imageOverride : selectedImage;
+      if (!selectedImage && validation.isValid) {
+        const randomImage = getRandomImage();
+        setSelectedImage(randomImage);
+        imageToUse = randomImage;
+        console.log(
+          "Auto-selected random image for QR generation:",
+          randomImage?.name
+        );
 
-      // Generate basic QR code
-      await QRCode.toCanvas(canvas, qrData, qrOptions);
+        // Auto-open image selector to show the selected image
+        if (!showImageSelector) {
+          setShowImageSelector(true);
+        }
 
-      // Create overlay canvas for media
-      const overlayCtx = overlayCanvas.getContext("2d");
+        // Show brief message about auto-selection
+        setSuccessMessage(
+          language === "vi"
+            ? `🎲 Tự động chọn ảnh: ${randomImage?.name}`
+            : `🎲 Auto-selected image: ${randomImage?.name}`
+        );
+        setTimeout(() => {
+          setSuccessMessage("");
+        }, 2000);
+      }
 
-      // Copy original QR code to overlay canvas
-      overlayCanvas.width = canvas.width;
-      overlayCanvas.height = canvas.height;
-      overlayCtx.drawImage(canvas, 0, 0);
+      console.log("Generating QR Code with data:", qrData);
+      console.log("Selected image:", imageToUse);
 
-      // Immediately show the base QR (without image) so users see feedback instantly
+      setIsGenerating(true);
+
+      // Add generating animation
+      const overlayCanvas = overlayCanvasRef.current;
+      if (overlayCanvas) {
+        overlayCanvas.className = "qr-canvas-display generating";
+      }
+
       try {
-        const baseUrl = overlayCanvas.toDataURL();
-        setQrCodeUrl(baseUrl);
-        animateCanvas(overlayCanvas, 50);
-      } catch (e) {
-        console.warn("Failed to create base data URL early:", e);
-      }
+        const canvas = canvasRef.current;
 
-      // Add image in the center if selected
-      if (imageToUse) {
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const imageSize = Math.min(canvas.width, canvas.height) * 0.2;
+        if (!canvas) {
+          console.error("Canvas ref is null");
+          return;
+        }
 
-        // Load and draw image
-        const img = new Image();
-        img.onload = () => {
-          overlayCtx.save();
+        if (!overlayCanvas) {
+          console.error("Overlay canvas ref is null");
+          return;
+        }
 
-          // Create circular clipping path for image
-          overlayCtx.beginPath();
-          overlayCtx.arc(centerX, centerY, imageSize * 0.8, 0, 2 * Math.PI);
-          overlayCtx.clip();
+        console.log("Canvas and overlay canvas are ready");
 
-          // Calculate image dimensions to fit in circle (không có shadow và background)
-          const imgSize = imageSize * 1.6;
-          overlayCtx.drawImage(
-            img,
-            centerX - imgSize / 2,
-            centerY - imgSize / 2,
-            imgSize,
-            imgSize
-          );
+        // Generate basic QR code
+        await QRCode.toCanvas(canvas, qrData, qrOptions);
 
-          overlayCtx.restore();
+        // Create overlay canvas for media
+        const overlayCtx = overlayCanvas.getContext("2d");
 
-          // Update QR code URL after image is loaded
-          const url = overlayCanvas.toDataURL();
-          setQrCodeUrl(url);
+        // Copy original QR code to overlay canvas
+        overlayCanvas.width = canvas.width;
+        overlayCanvas.height = canvas.height;
+        overlayCtx.drawImage(canvas, 0, 0);
 
-          // Add success animation after image is loaded
-          animateCanvas(overlayCanvas, 100);
-        };
-        img.onerror = (err) => {
-          console.error(
-            "Failed to load center image:",
-            imageToUse?.content,
-            err
-          );
-          try {
+        // Immediately show the base QR (without image) so users see feedback instantly
+        try {
+          const baseUrl = overlayCanvas.toDataURL();
+          setQrCodeUrl(baseUrl);
+          animateCanvas(overlayCanvas, 50);
+        } catch (e) {
+          console.warn("Failed to create base data URL early:", e);
+        }
+
+        // Add image in the center if selected
+        if (imageToUse) {
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          const imageSize = Math.min(canvas.width, canvas.height) * 0.2;
+
+          // Load and draw image
+          const img = new Image();
+          img.onload = () => {
+            overlayCtx.save();
+
+            // Create circular clipping path for image
+            overlayCtx.beginPath();
+            overlayCtx.arc(centerX, centerY, imageSize * 0.8, 0, 2 * Math.PI);
+            overlayCtx.clip();
+
+            // Calculate image dimensions to fit in circle (không có shadow và background)
+            const imgSize = imageSize * 1.6;
+            overlayCtx.drawImage(
+              img,
+              centerX - imgSize / 2,
+              centerY - imgSize / 2,
+              imgSize,
+              imgSize
+            );
+
+            overlayCtx.restore();
+
+            // Update QR code URL after image is loaded
             const url = overlayCanvas.toDataURL();
             setQrCodeUrl(url);
+
+            // Add success animation after image is loaded
             animateCanvas(overlayCanvas, 100);
-          } catch (e) {
-            console.warn("Fallback toDataURL failed after image error:", e);
-          }
-        };
-        img.src = imageToUse.content;
-      } else {
-        // No image selected, just set the QR code URL
-        const url = overlayCanvas.toDataURL();
-        setQrCodeUrl(url);
-        // Add success animation
-        animateCanvas(overlayCanvas, 100);
-      }
-    } catch (error) {
-      console.error("Error generating QR code:", error);
+          };
+          img.onerror = (err) => {
+            console.error(
+              "Failed to load center image:",
+              imageToUse?.content,
+              err
+            );
+            try {
+              const url = overlayCanvas.toDataURL();
+              setQrCodeUrl(url);
+              animateCanvas(overlayCanvas, 100);
+            } catch (e) {
+              console.warn("Fallback toDataURL failed after image error:", e);
+            }
+          };
+          img.src = imageToUse.content;
+        } else {
+          // No image selected, just set the QR code URL
+          const url = overlayCanvas.toDataURL();
+          setQrCodeUrl(url);
+          // Add success animation
+          animateCanvas(overlayCanvas, 100);
+        }
+      } catch (error) {
+        console.error("Error generating QR code:", error);
 
-      // Show specific error messages based on error type
-      let errorMessage;
-      if (error.message.includes("canvas")) {
-        errorMessage = getTranslation(language, "errors.canvasError");
-      } else if (
-        error.message.includes("network") ||
-        error.message.includes("fetch")
-      ) {
-        errorMessage = getTranslation(language, "errors.networkError");
-      } else if (
-        error.message.includes("too large") ||
-        error.message.includes("too long")
-      ) {
-        errorMessage = getTranslation(language, "errors.contentTooLong");
-      } else {
-        errorMessage =
-          getTranslation(language, "errorGenerating") + error.message;
-      }
+        // Show specific error messages based on error type
+        let errorMessage;
+        if (error.message.includes("canvas")) {
+          errorMessage = getTranslation(language, "errors.canvasError");
+        } else if (
+          error.message.includes("network") ||
+          error.message.includes("fetch")
+        ) {
+          errorMessage = getTranslation(language, "errors.networkError");
+        } else if (
+          error.message.includes("too large") ||
+          error.message.includes("too long")
+        ) {
+          errorMessage = getTranslation(language, "errors.contentTooLong");
+        } else {
+          errorMessage =
+            getTranslation(language, "errorGenerating") + error.message;
+        }
 
-      setErrorMessage(errorMessage);
-      alert(errorMessage);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [
-    qrData,
-    qrOptions,
-    selectedImage,
-    getRandomImage,
-    language,
-    showImageSelector,
-  ]);
+        setErrorMessage(errorMessage);
+        alert(errorMessage);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [
+      qrData,
+      qrOptions,
+      selectedImage,
+      getRandomImage,
+      language,
+      showImageSelector,
+    ]
+  );
 
   // Removed auto-generation useEffect - now manual only
 
@@ -1417,11 +1430,16 @@ const QRCodeGenerator = () => {
             <button
               className="random-meme-btn"
               onClick={() => {
-                const newRandomImage = getRandomImage(qrCodeUrl ? true : false);
+                // Always exclude current image to ensure we get a different one
+                const newRandomImage = getRandomImage(false, true);
+                const shouldAutoRegenerate = qrCodeUrl && qrData.trim();
+
                 setSelectedImage(newRandomImage);
 
-                // Show feedback message about random selection
-                if (qrCodeUrl) {
+                // Auto-regenerate QR if needed - pass image directly
+                if (shouldAutoRegenerate) {
+                  generateQRCode(newRandomImage);
+
                   setSuccessMessage(
                     language === "vi"
                       ? `🎲 Đã chọn ảnh ngẫu nhiên: ${newRandomImage.name} và tạo lại QR!`
@@ -1461,17 +1479,17 @@ const QRCodeGenerator = () => {
                     selectedImage?.content === image.content ? "selected" : ""
                   }`}
                   onClick={() => {
+                    const shouldAutoRegenerate = qrCodeUrl && qrData.trim();
                     setSelectedImage(image);
 
                     // Auto-regenerate QR if already exists
-                    if (qrCodeUrl && qrData.trim()) {
+                    if (shouldAutoRegenerate) {
                       console.log(
                         "Auto-regenerating QR with selected image:",
                         image.name
                       );
-                      setTimeout(() => {
-                        generateQRCode();
-                      }, 100);
+                      // Pass the image directly to avoid state timing issues
+                      generateQRCode(image);
 
                       // Show feedback
                       setSuccessMessage(
@@ -1504,14 +1522,14 @@ const QRCodeGenerator = () => {
               <button
                 className={`media-btn ${!selectedImage ? "selected" : ""}`}
                 onClick={() => {
+                  const shouldAutoRegenerate = qrCodeUrl && qrData.trim();
                   setSelectedImage(null);
 
                   // Auto-regenerate QR without image if already exists
-                  if (qrCodeUrl && qrData.trim()) {
+                  if (shouldAutoRegenerate) {
                     console.log("Auto-regenerating QR without image");
-                    setTimeout(() => {
-                      generateQRCode();
-                    }, 100);
+                    // Pass null directly to remove image immediately
+                    generateQRCode(null);
 
                     // Show feedback
                     setSuccessMessage(
