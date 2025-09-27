@@ -406,7 +406,15 @@ body {
 .color-inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: var(--spacing-md);
+}
+
+/* Responsive color inputs */
+@media (max-width: 480px) {
+  .color-inputs {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
 }
 
 .color-input-group {
@@ -427,6 +435,15 @@ body {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+}
+
+/* Responsive color inputs */
+@media (max-width: 768px) {
+  .color-input {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    border-radius: 8px;
+  }
 }
 
 .range-input {
@@ -489,13 +506,38 @@ body {
 .qr-preview {
   background: var(--bg-tertiary);
   border-radius: 12px;
-  padding: 24px;
+  padding: var(--spacing-lg);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 300px;
   border: 1px solid var(--border-color);
   transition: border-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Responsive QR preview */
+@media (max-width: 768px) {
+  .qr-preview {
+    min-height: 280px;
+    padding: var(--spacing-md);
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .qr-preview {
+    min-height: 250px;
+    padding: var(--spacing-sm);
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .qr-preview {
+    min-height: 220px;
+  }
 }
 
 .qr-preview:hover {
@@ -588,12 +630,22 @@ body {
 /* Action buttons container */
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
+  align-items: stretch;
+}
+
+/* Responsive action buttons optimization */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
 }
 
 @media (max-width: 480px) {
   .action-buttons {
     flex-direction: column;
+    gap: var(--spacing-xs);
   }
 }
 
@@ -621,11 +673,13 @@ body {
 .suggestion-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--spacing-xs);
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .suggestion-btn {
-  padding: 8px 14px;
+  padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -634,6 +688,44 @@ body {
   font-weight: 400;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Responsive suggestion buttons */
+@media (max-width: 768px) {
+  .suggestion-buttons {
+    gap: var(--spacing-xs);
+    justify-content: center;
+  }
+
+  .suggestion-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-sm);
+    min-height: var(--touch-target-comfortable);
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .suggestion-buttons {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    width: 100%;
+  }
+
+  .suggestion-btn {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: var(--font-base);
+    min-height: var(--touch-target-comfortable);
+    border-radius: 12px;
+    justify-content: center;
+  }
 }
 
 .suggestion-btn:hover::before {
@@ -672,21 +764,64 @@ body {
 
 .meme-controls {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Responsive meme controls */
+@media (max-width: 768px) {
+  .meme-controls {
+    gap: var(--spacing-xs);
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .meme-controls {
+    gap: var(--spacing-xs);
+    flex-direction: column;
+    width: 100%;
+  }
 }
 
 .meme-toggle-btn {
   flex: 1;
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-primary);
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Responsive meme toggle button */
+@media (max-width: 768px) {
+  .meme-toggle-btn {
+    min-height: var(--touch-target-comfortable);
+    padding: var(--spacing-md);
+    font-size: var(--font-base);
+    border-radius: 10px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .meme-toggle-btn {
+    min-height: var(--touch-target-comfortable);
+    padding: var(--spacing-md);
+    font-size: var(--font-base);
+    border-radius: 8px;
+  }
 }
 
 .meme-toggle-btn:hover {
@@ -696,15 +831,42 @@ body {
 }
 
 .random-meme-btn {
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--accent-color);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: white;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+/* Responsive random meme button */
+@media (max-width: 768px) {
+  .random-meme-btn {
+    min-height: var(--touch-target-comfortable);
+    padding: var(--spacing-md);
+    font-size: var(--font-base);
+    border-radius: 10px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .random-meme-btn {
+    min-height: var(--touch-target-comfortable);
+    padding: var(--spacing-md);
+    font-size: var(--font-base);
+    border-radius: 8px;
+  }
 }
 
 .random-meme-btn:hover {
@@ -712,16 +874,47 @@ body {
 }
 
 .url-image-btn {
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-primary);
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-left: 8px;
+  margin-left: var(--spacing-xs);
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+/* Responsive URL image button */
+@media (max-width: 768px) {
+  .url-image-btn {
+    margin-left: 0;
+    margin-top: var(--spacing-xs);
+    min-height: var(--touch-target-comfortable);
+    padding: var(--spacing-md);
+    font-size: var(--font-base);
+    border-radius: 10px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .url-image-btn {
+    margin-left: 0;
+    margin-top: var(--spacing-xs);
+    min-height: var(--touch-target-comfortable);
+    padding: var(--spacing-md);
+    font-size: var(--font-base);
+    border-radius: 8px;
+  }
 }
 
 .url-image-btn:hover {
@@ -739,10 +932,10 @@ body {
 .meme-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 10px;
+  gap: var(--spacing-sm);
   max-height: 300px;
   overflow-y: auto;
-  padding: 12px;
+  padding: var(--spacing-md);
   background: var(--bg-secondary);
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -750,17 +943,76 @@ body {
   scroll-behavior: smooth;
 }
 
+/* Responsive meme grid optimization */
+@media (max-width: 768px) {
+  .meme-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: var(--spacing-xs);
+    max-height: 250px;
+    padding: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .meme-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-xs);
+    max-height: 200px;
+    padding: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 360px) {
+  .meme-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-xs);
+    max-height: 180px;
+    padding: var(--spacing-xs);
+  }
+}
+
 .meme-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 10px 8px;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  aspect-ratio: 1;
+  box-sizing: border-box;
+}
+
+/* Responsive meme buttons */
+@media (max-width: 768px) {
+  .meme-btn {
+    min-height: var(--touch-target-comfortable);
+    padding: var(--spacing-xs);
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .meme-btn {
+    min-height: 60px;
+    padding: var(--spacing-xs);
+    border-radius: 6px;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 360px) {
+  .meme-btn {
+    min-height: 50px;
+    padding: 4px;
+    border-radius: 4px;
+    gap: 2px;
+  }
 }
 
 .meme-btn:hover {
@@ -775,14 +1027,48 @@ body {
 }
 
 .meme-emoji {
-  font-size: 1.6rem;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  line-height: 1;
 }
 
 .meme-name {
-  font-size: 0.7rem;
+  font-size: clamp(0.6rem, 1.5vw, 0.75rem);
   color: var(--text-secondary);
   font-weight: 500;
   text-align: center;
+  line-height: 1.1;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Responsive meme content */
+@media (max-width: 480px) {
+  .meme-emoji {
+    font-size: 1.2rem;
+  }
+
+  .meme-name {
+    font-size: 0.6rem;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+}
+
+@media (max-width: 360px) {
+  .meme-emoji {
+    font-size: 1rem;
+  }
+
+  .meme-name {
+    font-size: 0.55rem;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
 }
 
 .meme-btn.selected .meme-name {
