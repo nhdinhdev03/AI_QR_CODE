@@ -116,41 +116,58 @@ const QRCodeGenerator = () => {
       }
 
       if (isIOS) {
-        // iOS: Multiple fallback methods for better compatibility
+        // iOS: Try direct navigation methods first
 
-        // Method 1: Try Safari URL scheme first
-        const safariUrl = `x-web-search://?${encodeURIComponent(currentUrl)}`;
+        // Method 1: Direct URL replacement (most reliable)
+        try {
+          window.location.href = currentUrl;
+          return; // Exit early if successful
+        } catch (err) {
+          console.log("Direct navigation failed:", err);
+        }
 
-        // Method 2: Try Chrome URL scheme
+        // Method 2: Chrome URL scheme
         const chromeUrl = currentUrl.replace(/^https:/, "googlechromes:");
 
-        // Method 3: Direct URL with _blank
+        // Method 3: Multiple fallback strategies
         const methods = [
-          () => (window.location.href = safariUrl),
+          () => {
+            // Force window open with specific target
+            window.open(currentUrl, "_self");
+          },
           () => (window.location.href = chromeUrl),
+          () => {
+            // Create a temporary link and click it
+            const tempLink = document.createElement("a");
+            tempLink.href = currentUrl;
+            tempLink.target = "_blank";
+            tempLink.rel = "noopener noreferrer";
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+          },
           () => window.open(currentUrl, "_blank", "noopener,noreferrer"),
-          () => (window.location.href = currentUrl),
         ];
 
-        // Try each method with delays
+        // Try each method with minimal delay
         methods.forEach((method, index) => {
           setTimeout(() => {
             try {
               method();
             } catch (err) {
-              console.log(`iOS method ${index + 1} failed:`, err);
+              console.log(`iOS method ${index + 2} failed:`, err);
             }
-          }, index * 100);
+          }, index * 200);
         });
 
-        // Show manual instruction for iOS
+        // Show manual instruction for iOS after attempts
         setTimeout(() => {
           setErrorMessage(
             language === "vi"
-              ? "📱 Hướng dẫn iOS: Nhấn giữ link này → Copy → Mở Safari → Dán: nhdinh-qr-code.netlify.app"
-              : "📱 iOS Guide: Long press this link → Copy → Open Safari → Paste: nhdinh-qr-code.netlify.app"
+              ? "📱 iOS: Nếu không tự động mở, hãy copy link này và mở Safari thủ công: nhdinh-qr-code.netlify.app"
+              : "📱 iOS: If not auto-opened, copy this link and open Safari manually: nhdinh-qr-code.netlify.app"
           );
-        }, 1000);
+        }, 1500);
       } else if (isAndroid) {
         // Android: Use intent to open Chrome
         const scheme = currentUrl.startsWith("https") ? "https" : "http";
@@ -183,6 +200,42 @@ const QRCodeGenerator = () => {
       setTimeout(() => setErrorMessage(""), 8000);
     }
   }, [language, isInAppBrowser]);
+
+  // Helper: copy website link to clipboard
+  const copyWebsiteLink = useCallback(async () => {
+    const websiteUrl = "https://nhdinh-qr-code.netlify.app/";
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(websiteUrl);
+        setSuccessMessage(
+          language === "vi"
+            ? "✅ Đã copy link! Giờ mở Safari và dán vào thanh địa chỉ"
+            : "✅ Link copied! Now open Safari and paste in address bar"
+        );
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = websiteUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        setSuccessMessage(
+          language === "vi"
+            ? "✅ Đã copy link! Giờ mở Safari và dán vào thanh địa chỉ"
+            : "✅ Link copied! Now open Safari and paste in address bar"
+        );
+      }
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch (err) {
+      setErrorMessage(
+        language === "vi"
+          ? "❗ Không thể copy! Link: nhdinh-qr-code.netlify.app"
+          : "❗ Cannot copy! Link: nhdinh-qr-code.netlify.app"
+      );
+      setTimeout(() => setErrorMessage(""), 5000);
+    }
+  }, [language]);
 
   // Helper: animate canvas class transitions
   const animateCanvas = (canvas, delay = 100) => {
@@ -2336,26 +2389,7 @@ const QRCodeGenerator = () => {
 
               <button
                 className="btn btn-warning"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(
-                      "https://nhdinh-qr-code.netlify.app/"
-                    );
-                    setSuccessMessage(
-                      language === "vi"
-                        ? "📋 Đã copy link! Mở Safari và dán vào thanh địa chỉ"
-                        : "📋 Link copied! Open Safari and paste in address bar"
-                    );
-                    setTimeout(() => setSuccessMessage(""), 4000);
-                  } catch (err) {
-                    setErrorMessage(
-                      language === "vi"
-                        ? "❗ Không thể copy! Link: nhdinh-qr-code.netlify.app"
-                        : "❗ Cannot copy! Link: nhdinh-qr-code.netlify.app"
-                    );
-                    setTimeout(() => setErrorMessage(""), 4000);
-                  }
-                }}
+                onClick={copyWebsiteLink}
                 style={{ fontSize: "0.9rem" }}
               >
                 📋 {language === "vi" ? "Copy Link" : "Copy Link"}
