@@ -125,6 +125,24 @@ body {
   -webkit-backface-visibility: hidden;
 }
 
+/* Prevent zoom on input focus for mobile devices */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="url"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+}
+
 .container {
   max-width: var(--container-xl);
   margin: 0 auto;
@@ -378,6 +396,7 @@ body {
   .form-group input,
   .form-group textarea,
   .form-group select {
+    font-size: 16px; /* Prevents zoom on mobile */
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: 8px;
   }
@@ -1120,6 +1139,10 @@ body {
   padding: 4px;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  /* Performance optimizations */
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 380px;
 }
 
 .media-btn {
@@ -1185,6 +1208,10 @@ body {
   object-fit: cover;
   border-radius: 50%;
   transition: transform 0.3s ease;
+  /* Performance optimizations for lazy loading */
+  will-change: transform;
+  content-visibility: auto;
+  contain-intrinsic-size: 60px 60px;
 }
 
 .media-btn:hover .media-image {

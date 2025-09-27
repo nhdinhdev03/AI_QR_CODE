@@ -1117,16 +1117,14 @@ const QRCodeGenerator = () => {
           randomImage?.name
         );
 
-        // Auto-open image selector to show the selected image
-        if (!showImageSelector) {
-          setShowImageSelector(true);
-        }
+        // Don't auto-open image selector - let user manually choose to show images
+        // Removed auto-open to optimize performance and UX
 
-        // Show brief message about auto-selection
+        // Show brief message about auto-selection with hint to view images
         setSuccessMessage(
           language === "vi"
-            ? `🎲 Tự động chọn ảnh: ${randomImage?.name}`
-            : `🎲 Auto-selected image: ${randomImage?.name}`
+            ? `🎲 Đã chọn ảnh: ${randomImage?.name}. Click "Hiện ảnh" để xem`
+            : `🎲 Selected image: ${randomImage?.name}. Click "Show Images" to view`
         );
         setTimeout(() => {
           setSuccessMessage("");
@@ -1820,6 +1818,8 @@ const QRCodeGenerator = () => {
                       src={image.content}
                       alt={image.name}
                       className="media-image"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.target.style.display = "none";
                         e.target.nextSibling.style.display = "flex";
