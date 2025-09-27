@@ -115,51 +115,72 @@ const QRCodeGenerator = () => {
         return;
       }
 
-      if (isAndroid) {
-        // Attempt to open Chrome via Android intent
+      if (isIOS) {
+        // iOS: Multiple fallback methods for better compatibility
+
+        // Method 1: Try Safari URL scheme first
+        const safariUrl = `x-web-search://?${encodeURIComponent(currentUrl)}`;
+
+        // Method 2: Try Chrome URL scheme
+        const chromeUrl = currentUrl.replace(/^https:/, "googlechromes:");
+
+        // Method 3: Direct URL with _blank
+        const methods = [
+          () => (window.location.href = safariUrl),
+          () => (window.location.href = chromeUrl),
+          () => window.open(currentUrl, "_blank", "noopener,noreferrer"),
+          () => (window.location.href = currentUrl),
+        ];
+
+        // Try each method with delays
+        methods.forEach((method, index) => {
+          setTimeout(() => {
+            try {
+              method();
+            } catch (err) {
+              console.log(`iOS method ${index + 1} failed:`, err);
+            }
+          }, index * 100);
+        });
+
+        // Show manual instruction for iOS
+        setTimeout(() => {
+          setErrorMessage(
+            language === "vi"
+              ? "📱 Hướng dẫn iOS: Nhấn giữ link này → Copy → Mở Safari → Dán: nhdinh-qr-code.netlify.app"
+              : "📱 iOS Guide: Long press this link → Copy → Open Safari → Paste: nhdinh-qr-code.netlify.app"
+          );
+        }, 1000);
+      } else if (isAndroid) {
+        // Android: Use intent to open Chrome
         const scheme = currentUrl.startsWith("https") ? "https" : "http";
         const urlNoScheme = currentUrl.replace(/^https?:\/\//, "");
         const intentUrl = `intent://${urlNoScheme}#Intent;scheme=${scheme};package=com.android.chrome;end`;
 
-        // Use _self to replace in-app webview
+        // Try intent first, then fallback
         window.location.href = intentUrl;
-
-        // Fallback: try opening standard url in a new window
         setTimeout(() => {
           window.open(currentUrl, "_blank");
-        }, 600);
-      } else if (isIOS) {
-        // Try to open in iOS Chrome (if installed)
-        const chromeUrl = currentUrl
-          .replace(/^http:/, "googlechrome:")
-          .replace(/^https:/, "googlechromes:");
-
-        const newTab = window.open(chromeUrl, "_blank");
-        // Fallback: try Safari new tab
-        setTimeout(() => {
-          if (!newTab || newTab.closed) {
-            window.open(currentUrl, "_blank");
-          }
-        }, 600);
+        }, 800);
       } else {
         // Desktop or other platforms
         window.open(currentUrl, "_blank", "noopener,noreferrer");
       }
 
-      // UX feedback
+      // Show immediate feedback
       setSuccessMessage(
         language === "vi"
-          ? "🌐 Đang chuyển đến Safari/Chrome: nhdinh-qr-code.netlify.app"
-          : "🌐 Redirecting to Safari/Chrome: nhdinh-qr-code.netlify.app"
+          ? "🌐 Đang thử mở Safari/Chrome... Nếu không thành công, hãy copy link thủ công!"
+          : "🌐 Trying to open Safari/Chrome... If unsuccessful, please copy the link manually!"
       );
-      setTimeout(() => setSuccessMessage(""), 4000);
+      setTimeout(() => setSuccessMessage(""), 6000);
     } catch (e) {
       setErrorMessage(
         language === "vi"
-          ? "❗ Không thể tự động mở! Hãy mở Safari/Chrome và truy cập: nhdinh-qr-code.netlify.app"
-          : "❗ Unable to auto-open! Please open Safari/Chrome and visit: nhdinh-qr-code.netlify.app"
+          ? "❗ Không thể tự động mở! Hãy copy và mở thủ công: nhdinh-qr-code.netlify.app"
+          : "❗ Unable to auto-open! Please copy and open manually: nhdinh-qr-code.netlify.app"
       );
-      setTimeout(() => setErrorMessage(""), 5000);
+      setTimeout(() => setErrorMessage(""), 8000);
     }
   }, [language, isInAppBrowser]);
 
@@ -1679,31 +1700,33 @@ const QRCodeGenerator = () => {
             fontSize: "0.9rem",
             fontWeight: "500",
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            animation: "slideIn 0.5s ease-out"
+            animation: "slideIn 0.5s ease-out",
           }}
         >
           <div style={{ marginBottom: "8px", fontSize: "1.1rem" }}>
             🌐 {language === "vi" ? "Trải nghiệm tốt nhất" : "Best Experience"}
           </div>
           <div>
-            {language === "vi" 
+            {language === "vi"
               ? "Để sử dụng đầy đủ tính năng, hãy mở Safari hoặc Chrome và truy cập:"
               : "For full features, please open Safari or Chrome and visit:"}
           </div>
-          <div style={{ 
-            marginTop: "8px", 
-            padding: "8px 12px",
-            background: "rgba(255,255,255,0.2)",
-            borderRadius: "6px",
-            fontFamily: "monospace",
-            fontSize: "0.85rem",
-            fontWeight: "bold"
-          }}>
+          <div
+            style={{
+              marginTop: "8px",
+              padding: "8px 12px",
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "6px",
+              fontFamily: "monospace",
+              fontSize: "0.85rem",
+              fontWeight: "bold",
+            }}
+          >
             nhdinh-qr-code.netlify.app
           </div>
         </div>
       )}
-      
+
       <div className="controls-section">
         <div className="form-group">
           <label htmlFor="qr-data">
@@ -2298,32 +2321,122 @@ const QRCodeGenerator = () => {
             {getTranslation(language, "copyToClipboard")}
           </button>
 
-          {/* Show "Open in Browser" button for in-app browsers */}
+          {/* Show browser buttons for in-app browsers */}
           {isInAppBrowser() && (
-            <button className="btn btn-accent" onClick={openInExternalBrowser}>
-              <Sparkles size={18} />
-              {language === "vi" ? "🌐 Mở Safari/Chrome" : "🌐 Open Safari/Chrome"}
-            </button>
+            <>
+              <button
+                className="btn btn-accent"
+                onClick={openInExternalBrowser}
+              >
+                <Sparkles size={18} />
+                {language === "vi"
+                  ? "🌐 Mở Safari/Chrome"
+                  : "🌐 Open Safari/Chrome"}
+              </button>
+
+              <button
+                className="btn btn-warning"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(
+                      "https://nhdinh-qr-code.netlify.app/"
+                    );
+                    setSuccessMessage(
+                      language === "vi"
+                        ? "📋 Đã copy link! Mở Safari và dán vào thanh địa chỉ"
+                        : "📋 Link copied! Open Safari and paste in address bar"
+                    );
+                    setTimeout(() => setSuccessMessage(""), 4000);
+                  } catch (err) {
+                    setErrorMessage(
+                      language === "vi"
+                        ? "❗ Không thể copy! Link: nhdinh-qr-code.netlify.app"
+                        : "❗ Cannot copy! Link: nhdinh-qr-code.netlify.app"
+                    );
+                    setTimeout(() => setErrorMessage(""), 4000);
+                  }
+                }}
+                style={{ fontSize: "0.9rem" }}
+              >
+                📋 {language === "vi" ? "Copy Link" : "Copy Link"}
+              </button>
+            </>
           )}
         </div>
 
-        {/* In-app browser download hint */}
+        {/* In-app browser guidance */}
         {isInAppBrowser() && qrCodeUrl && (
           <div
             style={{
               marginTop: "15px",
-              padding: "12px",
-              background: "var(--warning-color)",
+              padding: "15px",
+              background: "linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)",
               color: "white",
-              borderRadius: "8px",
+              borderRadius: "12px",
               fontSize: "0.85rem",
-              textAlign: "center",
+              textAlign: "left",
               animation: "fadeIn 0.3s ease",
+              lineHeight: "1.4",
             }}
           >
-            {language === "vi"
-              ? "🌐 Mẹo: Để có trải nghiệm tốt nhất, hãy nhấn 'Mở Safari/Chrome' để chuyển đến nhdinh-qr-code.netlify.app"
-              : "🌐 Tip: For best experience, tap 'Open Safari/Chrome' to go to nhdinh-qr-code.netlify.app"}
+            <div
+              style={{
+                fontWeight: "bold",
+                marginBottom: "8px",
+                textAlign: "center",
+              }}
+            >
+              📱{" "}
+              {language === "vi"
+                ? "Hướng dẫn sử dụng tốt nhất:"
+                : "Best Usage Guide:"}
+            </div>
+
+            {language === "vi" ? (
+              <div>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>Cách 1:</strong> Nhấn "🌐 Mở Safari/Chrome" ở trên
+                </div>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>Cách 2:</strong> Nhấn "📋 Copy Link" → Mở Safari → Dán
+                  link
+                </div>
+                <div
+                  style={{
+                    marginTop: "10px",
+                    padding: "8px",
+                    background: "rgba(255,255,255,0.2)",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  nhdinh-qr-code.netlify.app
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>Method 1:</strong> Tap "🌐 Open Safari/Chrome" above
+                </div>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>Method 2:</strong> Tap "📋 Copy Link" → Open Safari →
+                  Paste link
+                </div>
+                <div
+                  style={{
+                    marginTop: "10px",
+                    padding: "8px",
+                    background: "rgba(255,255,255,0.2)",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  nhdinh-qr-code.netlify.app
+                </div>
+              </div>
+            )}
           </div>
         )}
 
