@@ -109,44 +109,60 @@ const QRCodeGenerator = () => {
       const isIOS = /iphone|ipad|ipod/.test(ua);
       const currentUrl = "https://nhdinh-qr-code.netlify.app/";
 
-      // If we're not in an in-app browser, just open a new tab
+      // Always try to open in new tab first (works best for most browsers)
+      const newTab = window.open(currentUrl, "_blank", "noopener,noreferrer");
+
+      // If new tab opened successfully, show success message and return
+      if (newTab && !newTab.closed) {
+        setSuccessMessage(
+          language === "vi"
+            ? "✅ Đã mở tab mới thành công!"
+            : "✅ New tab opened successfully!"
+        );
+        setTimeout(() => setSuccessMessage(""), 3000);
+        return;
+      }
+
+      // If we're not in an in-app browser and new tab failed, try direct navigation
       if (!isInAppBrowser()) {
-        window.open(currentUrl, "_blank", "noopener,noreferrer");
+        window.location.href = currentUrl;
         return;
       }
 
       if (isIOS) {
-        // iOS: Try direct navigation methods first
+        // iOS: Try multiple methods to open in new tab/Safari
 
-        // Method 1: Direct URL replacement (most reliable)
+        // Method 1: Try to create and click a temporary link (often works best)
         try {
-          window.location.href = currentUrl;
-          return; // Exit early if successful
+          const tempLink = document.createElement("a");
+          tempLink.href = currentUrl;
+          tempLink.target = "_blank";
+          tempLink.rel = "noopener noreferrer";
+          tempLink.style.display = "none";
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+
+          setSuccessMessage(
+            language === "vi"
+              ? "🌐 Đang mở Safari/Chrome..."
+              : "🌐 Opening Safari/Chrome..."
+          );
+          setTimeout(() => setSuccessMessage(""), 3000);
+          return;
         } catch (err) {
-          console.log("Direct navigation failed:", err);
+          console.log("Temp link method failed:", err);
         }
 
-        // Method 2: Chrome URL scheme
+        // Method 2: Chrome URL scheme for new tab
         const chromeUrl = currentUrl.replace(/^https:/, "googlechromes:");
 
         // Method 3: Multiple fallback strategies
         const methods = [
-          () => {
-            // Force window open with specific target
-            window.open(currentUrl, "_self");
-          },
-          () => (window.location.href = chromeUrl),
-          () => {
-            // Create a temporary link and click it
-            const tempLink = document.createElement("a");
-            tempLink.href = currentUrl;
-            tempLink.target = "_blank";
-            tempLink.rel = "noopener noreferrer";
-            document.body.appendChild(tempLink);
-            tempLink.click();
-            document.body.removeChild(tempLink);
-          },
           () => window.open(currentUrl, "_blank", "noopener,noreferrer"),
+          () => (window.location.href = chromeUrl),
+          () => window.open(currentUrl, "_self"),
+          () => (window.location.href = currentUrl),
         ];
 
         // Try each method with minimal delay
@@ -169,19 +185,42 @@ const QRCodeGenerator = () => {
           );
         }, 1500);
       } else if (isAndroid) {
-        // Android: Use intent to open Chrome
+        // Android: Try to open in new tab first, then use intent
+        try {
+          const newTab = window.open(
+            currentUrl,
+            "_blank",
+            "noopener,noreferrer"
+          );
+          if (newTab && !newTab.closed) {
+            setSuccessMessage(
+              language === "vi" ? "✅ Đã mở tab mới!" : "✅ New tab opened!"
+            );
+            setTimeout(() => setSuccessMessage(""), 3000);
+            return;
+          }
+        } catch (err) {
+          console.log("New tab failed on Android:", err);
+        }
+
+        // Fallback: Use intent to open Chrome
         const scheme = currentUrl.startsWith("https") ? "https" : "http";
         const urlNoScheme = currentUrl.replace(/^https?:\/\//, "");
         const intentUrl = `intent://${urlNoScheme}#Intent;scheme=${scheme};package=com.android.chrome;end`;
 
-        // Try intent first, then fallback
         window.location.href = intentUrl;
         setTimeout(() => {
           window.open(currentUrl, "_blank");
         }, 800);
       } else {
-        // Desktop or other platforms
-        window.open(currentUrl, "_blank", "noopener,noreferrer");
+        // Desktop or other platforms - open in new tab
+        const newTab = window.open(currentUrl, "_blank", "noopener,noreferrer");
+        if (newTab && !newTab.closed) {
+          setSuccessMessage(
+            language === "vi" ? "✅ Đã mở tab mới!" : "✅ New tab opened!"
+          );
+          setTimeout(() => setSuccessMessage(""), 3000);
+        }
       }
 
       // Show immediate feedback
