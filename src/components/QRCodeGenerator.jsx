@@ -101,6 +101,68 @@ const QRCodeGenerator = () => {
     );
   }, []);
 
+  // Helper: try to open current page in external browser (Chrome/Safari)
+  const openInExternalBrowser = useCallback(() => {
+    try {
+      const ua = navigator.userAgent.toLowerCase();
+      const isAndroid = /android/.test(ua);
+      const isIOS = /iphone|ipad|ipod/.test(ua);
+      const currentUrl = "https://nhdinh-qr-code.netlify.app/";
+
+      // If we're not in an in-app browser, just open a new tab
+      if (!isInAppBrowser()) {
+        window.open(currentUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      if (isAndroid) {
+        // Attempt to open Chrome via Android intent
+        const scheme = currentUrl.startsWith("https") ? "https" : "http";
+        const urlNoScheme = currentUrl.replace(/^https?:\/\//, "");
+        const intentUrl = `intent://${urlNoScheme}#Intent;scheme=${scheme};package=com.android.chrome;end`;
+
+        // Use _self to replace in-app webview
+        window.location.href = intentUrl;
+
+        // Fallback: try opening standard url in a new window
+        setTimeout(() => {
+          window.open(currentUrl, "_blank");
+        }, 600);
+      } else if (isIOS) {
+        // Try to open in iOS Chrome (if installed)
+        const chromeUrl = currentUrl
+          .replace(/^http:/, "googlechrome:")
+          .replace(/^https:/, "googlechromes:");
+
+        const newTab = window.open(chromeUrl, "_blank");
+        // Fallback: try Safari new tab
+        setTimeout(() => {
+          if (!newTab || newTab.closed) {
+            window.open(currentUrl, "_blank");
+          }
+        }, 600);
+      } else {
+        // Desktop or other platforms
+        window.open(currentUrl, "_blank", "noopener,noreferrer");
+      }
+
+      // UX feedback
+      setSuccessMessage(
+        language === "vi"
+          ? "🌐 Đang chuyển đến Safari/Chrome: nhdinh-qr-code.netlify.app"
+          : "🌐 Redirecting to Safari/Chrome: nhdinh-qr-code.netlify.app"
+      );
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch (e) {
+      setErrorMessage(
+        language === "vi"
+          ? "❗ Không thể tự động mở! Hãy mở Safari/Chrome và truy cập: nhdinh-qr-code.netlify.app"
+          : "❗ Unable to auto-open! Please open Safari/Chrome and visit: nhdinh-qr-code.netlify.app"
+      );
+      setTimeout(() => setErrorMessage(""), 5000);
+    }
+  }, [language, isInAppBrowser]);
+
   // Helper: animate canvas class transitions
   const animateCanvas = (canvas, delay = 100) => {
     setTimeout(() => {
@@ -1126,6 +1188,46 @@ const QRCodeGenerator = () => {
   // Suggestions for QR code content
   const suggestions = getTranslation(language, "suggestions");
 
+  // Helper function to preload image with fallback for in-app browsers
+  const preloadImageForInAppBrowser = useCallback(
+    async (imageSource) => {
+      if (!isInAppBrowser() || !imageSource) {
+        return imageSource; // Return as-is if not in-app browser
+      }
+
+      return new Promise((resolve) => {
+        const testImg = new Image();
+
+        const timeout = setTimeout(() => {
+          console.warn("⏰ Image preload timeout, using original source");
+          resolve(imageSource);
+        }, 2000);
+
+        testImg.onload = () => {
+          clearTimeout(timeout);
+          console.log("✅ Image preload successful");
+          resolve(imageSource);
+        };
+
+        testImg.onerror = () => {
+          clearTimeout(timeout);
+          console.warn("❌ Image preload failed, will try without image");
+          resolve(null); // Return null to skip image
+        };
+
+        // Try absolute path first for in-app browsers
+        if (imageSource.startsWith("/") || imageSource.startsWith("./")) {
+          const absolutePath = new URL(imageSource, window.location.origin)
+            .href;
+          testImg.src = absolutePath;
+        } else {
+          testImg.src = imageSource;
+        }
+      });
+    },
+    [isInAppBrowser]
+  );
+
   const generateQRCode = useCallback(
     async (imageOverride = null) => {
       if (!qrData.trim()) {
@@ -1217,50 +1319,131 @@ const QRCodeGenerator = () => {
           const centerY = canvas.height / 2;
           const imageSize = Math.min(canvas.width, canvas.height) * 0.2;
 
-          // Load and draw image
-          const img = new Image();
-          img.onload = () => {
-            overlayCtx.save();
+          console.log(
+            "🖼️ Attempting to load image:",
+            imageToUse?.name,
+            "Source:",
+            imageToUse?.content?.substring(0, 50) + "..."
+          );
 
-            // Create circular clipping path for image
-            overlayCtx.beginPath();
-            overlayCtx.arc(centerX, centerY, imageSize * 0.8, 0, 2 * Math.PI);
-            overlayCtx.clip();
+          // Pre-check image compatibility for in-app browsers
+          const validImageSource = await preloadImageForInAppBrowser(
+            imageToUse.content
+          );
 
-            // Calculate image dimensions to fit in circle (không có shadow và background)
-            const imgSize = imageSize * 1.6;
-            overlayCtx.drawImage(
-              img,
-              centerX - imgSize / 2,
-              centerY - imgSize / 2,
-              imgSize,
-              imgSize
+          if (!validImageSource) {
+            console.warn(
+              "⚠️ Image not compatible with in-app browser, generating QR without image"
             );
-
-            overlayCtx.restore();
-
-            // Update QR code URL after image is loaded
-            const url = overlayCanvas.toDataURL();
+            // Generate QR without image
+            const url = overlayCanvas.toDataURL("image/png", 1.0);
             setQrCodeUrl(url);
-
-            // Add success animation after image is loaded
             animateCanvas(overlayCanvas, 100);
+
+            // Show informative message
+            setSuccessMessage(
+              language === "vi"
+                ? "✅ QR code đã tạo (không có ảnh meme do hạn chế của ứng dụng)"
+                : "✅ QR code generated (no meme image due to app limitations)"
+            );
+            setTimeout(() => setSuccessMessage(""), 3000);
+            return;
+          }
+
+          // Load and draw image with enhanced error handling for in-app browsers
+          const img = new Image();
+
+          // Set crossOrigin for better compatibility
+          if (!imageToUse.content.startsWith("data:")) {
+            img.crossOrigin = "anonymous";
+          }
+
+          img.onload = () => {
+            try {
+              overlayCtx.save();
+
+              // Create circular clipping path for image
+              overlayCtx.beginPath();
+              overlayCtx.arc(centerX, centerY, imageSize * 0.8, 0, 2 * Math.PI);
+              overlayCtx.clip();
+
+              // Calculate image dimensions to fit in circle (không có shadow và background)
+              const imgSize = imageSize * 1.6;
+              overlayCtx.drawImage(
+                img,
+                centerX - imgSize / 2,
+                centerY - imgSize / 2,
+                imgSize,
+                imgSize
+              );
+
+              overlayCtx.restore();
+
+              // Update QR code URL after image is loaded
+              const url = overlayCanvas.toDataURL("image/png", 1.0);
+              setQrCodeUrl(url);
+
+              // Add success animation after image is loaded
+              animateCanvas(overlayCanvas, 100);
+
+              console.log(
+                "✅ Image loaded and drawn successfully:",
+                imageToUse?.name
+              );
+            } catch (drawError) {
+              console.error("Error drawing image to canvas:", drawError);
+              // Fallback: create QR without image
+              try {
+                const url = overlayCanvas.toDataURL("image/png", 1.0);
+                setQrCodeUrl(url);
+                animateCanvas(overlayCanvas, 100);
+              } catch (e) {
+                console.warn("Fallback toDataURL failed:", e);
+              }
+            }
           };
+
           img.onerror = (err) => {
             console.error(
-              "Failed to load center image:",
+              "❌ Failed to load center image:",
               imageToUse?.content,
               err
             );
+
+            // Show user-friendly message for in-app browsers
+            if (isInAppBrowser()) {
+              setErrorMessage(
+                language === "vi"
+                  ? "⚠️ Không thể tải ảnh meme trong ứng dụng này. QR code vẫn hoạt động bình thường."
+                  : "⚠️ Cannot load meme image in this app. QR code still works normally."
+              );
+              setTimeout(() => setErrorMessage(""), 4000);
+            }
+
+            // Fallback: create QR without image
             try {
-              const url = overlayCanvas.toDataURL();
+              const url = overlayCanvas.toDataURL("image/png", 1.0);
               setQrCodeUrl(url);
               animateCanvas(overlayCanvas, 100);
             } catch (e) {
               console.warn("Fallback toDataURL failed after image error:", e);
             }
           };
-          img.src = imageToUse.content;
+
+          // For better compatibility in in-app browsers, try to preload the image
+          if (
+            (isInAppBrowser() && imageToUse.content.startsWith("/")) ||
+            imageToUse.content.startsWith("./")
+          ) {
+            // Convert relative paths to absolute for in-app browsers
+            const absolutePath = new URL(
+              imageToUse.content,
+              window.location.origin
+            ).href;
+            img.src = absolutePath;
+          } else {
+            img.src = imageToUse.content;
+          }
         } else {
           // No image selected, just set the QR code URL
           const url = overlayCanvas.toDataURL();
@@ -1303,6 +1486,7 @@ const QRCodeGenerator = () => {
       getRandomImage,
       language,
       showImageSelector,
+      preloadImageForInAppBrowser,
     ]
   );
 
@@ -1482,6 +1666,44 @@ const QRCodeGenerator = () => {
 
   return (
     <div className="main-content">
+      {/* Browser Recommendation Banner */}
+      {isInAppBrowser() && (
+        <div
+          style={{
+            margin: "0 0 20px 0",
+            padding: "15px",
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            color: "white",
+            borderRadius: "12px",
+            textAlign: "center",
+            fontSize: "0.9rem",
+            fontWeight: "500",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            animation: "slideIn 0.5s ease-out"
+          }}
+        >
+          <div style={{ marginBottom: "8px", fontSize: "1.1rem" }}>
+            🌐 {language === "vi" ? "Trải nghiệm tốt nhất" : "Best Experience"}
+          </div>
+          <div>
+            {language === "vi" 
+              ? "Để sử dụng đầy đủ tính năng, hãy mở Safari hoặc Chrome và truy cập:"
+              : "For full features, please open Safari or Chrome and visit:"}
+          </div>
+          <div style={{ 
+            marginTop: "8px", 
+            padding: "8px 12px",
+            background: "rgba(255,255,255,0.2)",
+            borderRadius: "6px",
+            fontFamily: "monospace",
+            fontSize: "0.85rem",
+            fontWeight: "bold"
+          }}>
+            nhdinh-qr-code.netlify.app
+          </div>
+        </div>
+      )}
+      
       <div className="controls-section">
         <div className="form-group">
           <label htmlFor="qr-data">
@@ -2078,40 +2300,9 @@ const QRCodeGenerator = () => {
 
           {/* Show "Open in Browser" button for in-app browsers */}
           {isInAppBrowser() && (
-            <button
-              className="btn btn-accent"
-              onClick={() => {
-                const currentUrl = window.location.href;
-                // Try to open in default browser
-                if (
-                  navigator.userAgent.includes("iPhone") ||
-                  navigator.userAgent.includes("iPad")
-                ) {
-                  // iOS - try to open in Safari
-                  window.location.href = `x-web-search://?${encodeURIComponent(
-                    currentUrl
-                  )}`;
-                  setTimeout(() => {
-                    window.open(currentUrl, "_blank");
-                  }, 500);
-                } else {
-                  // Android - try to open in Chrome/default browser
-                  window.open(currentUrl, "_system");
-                  setTimeout(() => {
-                    window.open(currentUrl, "_blank");
-                  }, 500);
-                }
-
-                setSuccessMessage(
-                  language === "vi"
-                    ? "🌐 Đang mở trong trình duyệt chính..."
-                    : "🌐 Opening in main browser..."
-                );
-                setTimeout(() => setSuccessMessage(""), 3000);
-              }}
-            >
+            <button className="btn btn-accent" onClick={openInExternalBrowser}>
               <Sparkles size={18} />
-              {language === "vi" ? "Mở trong Browser" : "Open in Browser"}
+              {language === "vi" ? "🌐 Mở Safari/Chrome" : "🌐 Open Safari/Chrome"}
             </button>
           )}
         </div>
@@ -2131,8 +2322,8 @@ const QRCodeGenerator = () => {
             }}
           >
             {language === "vi"
-              ? "💡 Mẹo: Nếu không tải được, hãy nhấn giữ ảnh QR hoặc dùng nút 'Mở trong Browser'"
-              : "💡 Tip: If download fails, long press QR image or use 'Open in Browser' button"}
+              ? "🌐 Mẹo: Để có trải nghiệm tốt nhất, hãy nhấn 'Mở Safari/Chrome' để chuyển đến nhdinh-qr-code.netlify.app"
+              : "🌐 Tip: For best experience, tap 'Open Safari/Chrome' to go to nhdinh-qr-code.netlify.app"}
           </div>
         )}
 
