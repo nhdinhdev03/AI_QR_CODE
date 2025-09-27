@@ -67,6 +67,40 @@ const QRCodeGenerator = () => {
   const overlayCanvasRef = useRef(null);
   const prevIsUrlRef = useRef(false);
 
+  // Helper: detect in-app browsers (memoized for performance)
+  const isInAppBrowser = useCallback(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return (
+      userAgent.includes("wv") || // Android WebView
+      userAgent.includes("fbav") || // Facebook in-app
+      userAgent.includes("fban") || // Facebook Android
+      userAgent.includes("fbios") || // Facebook iOS
+      userAgent.includes("instagram") || // Instagram
+      userAgent.includes("line") || // LINE
+      userAgent.includes("micromessenger") || // WeChat
+      userAgent.includes("twitter") || // Twitter/X
+      userAgent.includes("tiktok") || // TikTok
+      userAgent.includes("snapchat") || // Snapchat
+      userAgent.includes("zalo") || // Zalo
+      userAgent.includes("viber") || // Viber
+      userAgent.includes("telegram") || // Telegram
+      userAgent.includes("whatsapp") || // WhatsApp
+      userAgent.includes("messenger") || // Messenger
+      userAgent.includes("linkedin") || // LinkedIn
+      userAgent.includes("pinterest") || // Pinterest
+      userAgent.includes("reddit") || // Reddit
+      userAgent.includes("youtube") || // YouTube
+      userAgent.includes("discord") || // Discord
+      userAgent.includes("shopee") || // Shopee
+      userAgent.includes("lazada") || // Lazada
+      userAgent.includes("grab") || // Grab
+      userAgent.includes("gojek") || // Gojek
+      userAgent.includes("vnpay") || // VNPay
+      userAgent.includes("momo") || // MoMo
+      window.navigator.standalone === true // iOS PWA
+    );
+  }, []);
+
   // Helper: animate canvas class transitions
   const animateCanvas = (canvas, delay = 100) => {
     setTimeout(() => {
@@ -1277,10 +1311,75 @@ const QRCodeGenerator = () => {
   const downloadQRCode = (format = "png") => {
     if (!qrCodeUrl) return;
 
-    const link = document.createElement("a");
-    link.download = `qrcode.${format}`;
-    link.href = qrCodeUrl;
-    link.click();
+    // Use the helper function to detect in-app browser
+
+    try {
+      const link = document.createElement("a");
+      link.download = `qrcode-${Date.now()}.${format}`;
+      link.href = qrCodeUrl;
+
+      if (isInAppBrowser()) {
+        // For in-app browsers, try alternative approaches
+
+        // Method 1: Try to open in new tab/window
+        const newWindow = window.open(qrCodeUrl, "_blank");
+
+        if (!newWindow || newWindow.closed) {
+          // Method 2: Show instructions to user
+          setSuccessMessage(
+            language === "vi"
+              ? "📱 Để tải xuống: Nhấn giữ ảnh QR → Chọn 'Lưu ảnh' hoặc mở trong Safari/Chrome"
+              : "📱 To download: Long press QR image → Select 'Save Image' or open in Safari/Chrome"
+          );
+
+          // Method 3: Try canvas to blob approach
+          if (canvasRef.current) {
+            canvasRef.current.toBlob((blob) => {
+              if (blob && navigator.share) {
+                // Use Web Share API if available
+                const file = new File([blob], `qrcode.${format}`, {
+                  type: `image/${format}`,
+                });
+                navigator
+                  .share({
+                    files: [file],
+                    title: "QR Code",
+                    text: "Generated QR Code",
+                  })
+                  .catch(() => {
+                    // Fallback: create object URL
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                  });
+              }
+            }, `image/${format}`);
+          }
+
+          setTimeout(() => setSuccessMessage(""), 5000);
+          return;
+        }
+      }
+
+      // Standard download for regular browsers
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setSuccessMessage(
+        language === "vi"
+          ? "✅ Đã tải xuống QR Code!"
+          : "✅ QR Code downloaded!"
+      );
+      setTimeout(() => setSuccessMessage(""), 2000);
+    } catch (error) {
+      console.error("Download failed:", error);
+      setErrorMessage(
+        language === "vi"
+          ? "❌ Không thể tải xuống. Hãy nhấn giữ ảnh QR để lưu thủ công."
+          : "❌ Download failed. Please long press the QR image to save manually."
+      );
+      setTimeout(() => setErrorMessage(""), 4000);
+    }
   };
 
   const copyToClipboard = async () => {
@@ -1976,7 +2075,66 @@ const QRCodeGenerator = () => {
             <Copy size={18} />
             {getTranslation(language, "copyToClipboard")}
           </button>
+
+          {/* Show "Open in Browser" button for in-app browsers */}
+          {isInAppBrowser() && (
+            <button
+              className="btn btn-accent"
+              onClick={() => {
+                const currentUrl = window.location.href;
+                // Try to open in default browser
+                if (
+                  navigator.userAgent.includes("iPhone") ||
+                  navigator.userAgent.includes("iPad")
+                ) {
+                  // iOS - try to open in Safari
+                  window.location.href = `x-web-search://?${encodeURIComponent(
+                    currentUrl
+                  )}`;
+                  setTimeout(() => {
+                    window.open(currentUrl, "_blank");
+                  }, 500);
+                } else {
+                  // Android - try to open in Chrome/default browser
+                  window.open(currentUrl, "_system");
+                  setTimeout(() => {
+                    window.open(currentUrl, "_blank");
+                  }, 500);
+                }
+
+                setSuccessMessage(
+                  language === "vi"
+                    ? "🌐 Đang mở trong trình duyệt chính..."
+                    : "🌐 Opening in main browser..."
+                );
+                setTimeout(() => setSuccessMessage(""), 3000);
+              }}
+            >
+              <Sparkles size={18} />
+              {language === "vi" ? "Mở trong Browser" : "Open in Browser"}
+            </button>
+          )}
         </div>
+
+        {/* In-app browser download hint */}
+        {isInAppBrowser() && qrCodeUrl && (
+          <div
+            style={{
+              marginTop: "15px",
+              padding: "12px",
+              background: "var(--warning-color)",
+              color: "white",
+              borderRadius: "8px",
+              fontSize: "0.85rem",
+              textAlign: "center",
+              animation: "fadeIn 0.3s ease",
+            }}
+          >
+            {language === "vi"
+              ? "💡 Mẹo: Nếu không tải được, hãy nhấn giữ ảnh QR hoặc dùng nút 'Mở trong Browser'"
+              : "💡 Tip: If download fails, long press QR image or use 'Open in Browser' button"}
+          </div>
+        )}
 
         <div
           style={{
