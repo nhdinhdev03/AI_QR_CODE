@@ -380,12 +380,11 @@ body {
   box-sizing: border-box;
 }
 
-/* Responsive form inputs */
 @media (max-width: 768px) {
   .form-group input,
   .form-group textarea,
   .form-group select {
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
     padding: var(--spacing-md);
     border-radius: 10px;
     min-height: var(--touch-target-comfortable);
