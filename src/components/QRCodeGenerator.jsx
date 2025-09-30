@@ -132,7 +132,6 @@ const QRCodeGenerator = () => {
       if (isIOS) {
         // iOS: Try multiple methods to open in new tab/Safari
 
-        // Method 1: Try to create and click a temporary link (often works best)
         try {
           const tempLink = document.createElement("a");
           tempLink.href = currentUrl;
