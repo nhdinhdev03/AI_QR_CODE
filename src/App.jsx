@@ -5,10 +5,26 @@ import { getTranslation } from "./utils/translations";
 
 function AppContent() {
   const { isDark, language, toggleTheme, toggleLanguage } = useTheme();
+  const featureHighlights = (
+    getTranslation(language, "featuresList") || []
+  ).slice(0, 3);
+  const heroBadge = language === "vi" ? "Phiên bản 2025" : "2025 Edition";
+  const heroTagline =
+    language === "vi"
+      ? "Trải nghiệm chuẩn doanh nghiệp với bộ công cụ mã QR hiện đại."
+      : "Enterprise-grade polish with a modern QR creation suite.";
+  const heroEyebrow =
+    language === "vi" ? "Nền tảng QR thông minh" : "Intelligent QR platform";
 
   return (
-    <div className="App">
-      <div className="container">
+    <div className={`App ${isDark ? "App--dark" : ""}`}>
+      <div className="app-shell__decor" aria-hidden="true">
+        <span className="app-shell__orb app-shell__orb--primary" />
+        <span className="app-shell__orb app-shell__orb--secondary" />
+        <span className="app-shell__grid" />
+      </div>
+
+      <div className="container app-shell__content">
         <header className="header">
           <div className="header-controls">
             <button
@@ -28,15 +44,28 @@ function AppContent() {
             </button>
           </div>
 
-          <div className="header-content">
-            <div className="header-icon">
-              <Zap size={40} />
+          <div className="hero-card">
+            <div className="hero-card__meta">
+              <span className="hero-card__badge">{heroBadge}</span>
+              <span className="hero-card__tagline">{heroTagline}</span>
             </div>
-            <h1>{getTranslation(language, "title")}</h1>
-            <p>{getTranslation(language, "subtitle")}</p>
+
+            <div className="header-content hero-card__content">
+              <div className="header-icon hero-card__icon">
+                <Zap size={40} />
+              </div>
+              <div className="hero-card__text">
+                <p className="hero-card__eyebrow">{heroEyebrow}</p>
+                <h1>{getTranslation(language, "title")}</h1>
+                <p>{getTranslation(language, "subtitle")}</p>
+              </div>
+            </div>
           </div>
         </header>
-        <QRCodeGenerator />
+
+        <main className="workspace">
+          <QRCodeGenerator />
+        </main>
       </div>
     </div>
   );
