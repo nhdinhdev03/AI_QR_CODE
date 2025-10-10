@@ -2,6 +2,26 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* Enable hardware acceleration for better performance */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* GPU acceleration for transform and opacity animations */
+.btn,
+.meme-btn,
+.media-btn,
+.suggestion-btn,
+.qr-canvas-display,
+.theme-toggle,
+.language-toggle,
+.qr-preview,
+.main-content {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Prevent flash of unstyled content during theme loading */
@@ -13,13 +33,15 @@ html[data-theme] {
   visibility: visible;
 }
 
-/* Smooth theme transitions after initial load */
+/* Smooth theme transitions after initial load - Optimized */
 html.theme-loaded,
 html.theme-loaded *,
 html.theme-loaded *:before,
 html.theme-loaded *:after {
-  transition: background-color 0.2s ease, color 0.2s ease,
-    border-color 0.2s ease, box-shadow 0.2s ease !important;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 :root {
@@ -112,17 +134,23 @@ body {
   line-height: 1.6;
   /* No transition on initial load, added via .theme-loaded class */
 
-  /* Mobile optimizations */
+  /* Mobile optimizations - Enhanced */
   -webkit-overflow-scrolling: touch;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   touch-action: manipulation;
   overscroll-behavior-y: bounce;
   scroll-behavior: smooth;
 
-  /* Performance optimizations */
+  /* Better text rendering */
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1;
+
+  /* Performance optimizations - Enhanced */
   will-change: auto;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Prevent zoom on input focus for mobile devices */
@@ -372,12 +400,17 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: var(--font-base);
-  transition: all 0.2s ease;
+  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--bg-tertiary);
   color: var(--text-primary);
   width: 100%;
   min-height: var(--touch-target-min);
   box-sizing: border-box;
+  /* Hardware acceleration */
+  transform: translateZ(0);
 }
 
 @media (max-width: 768px) {
@@ -592,7 +625,10 @@ body {
   font-size: var(--font-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -600,6 +636,9 @@ body {
   min-height: var(--touch-target-min);
   box-sizing: border-box;
   white-space: nowrap;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Enhanced button sizing for different screen sizes */
@@ -630,7 +669,13 @@ body {
 
 .btn-primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px) translateZ(0);
+}
+
+.btn-primary:active {
+  transform: translateY(0) translateZ(0);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
 
 .btn-secondary {
@@ -642,7 +687,13 @@ body {
 .btn-secondary:hover {
   background: var(--bg-secondary);
   border-color: var(--accent-color);
-  box-shadow: 0 2px 8px var(--shadow-light);
+  box-shadow: 0 4px 12px var(--shadow-light);
+  transform: translateY(-1px) translateZ(0);
+}
+
+.btn-secondary:active {
+  transform: translateY(0) translateZ(0);
+  box-shadow: 0 2px 6px var(--shadow-light);
 }
 
 .btn-accent {
@@ -723,13 +774,20 @@ body {
   font-size: 0.85rem;
   font-weight: 400;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   box-sizing: border-box;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Responsive suggestion buttons */
@@ -771,8 +829,13 @@ body {
 .suggestion-btn:hover {
   background: var(--accent-color);
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(124, 124, 240, 0.3);
+  transform: translateY(-2px) scale(1.03) translateZ(0);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.suggestion-btn:active {
+  transform: translateY(0) scale(1) translateZ(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Meme Section Styles */
@@ -1018,10 +1081,16 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: var(--touch-target-min);
   aspect-ratio: 1;
   box-sizing: border-box;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Responsive meme buttons */
@@ -1054,12 +1123,20 @@ body {
 .meme-btn:hover {
   background: var(--bg-secondary);
   border-color: var(--accent-color);
+  transform: scale(1.05) translateZ(0);
+  box-shadow: 0 2px 8px var(--shadow-light);
+}
+
+.meme-btn:active {
+  transform: scale(0.98) translateZ(0);
 }
 
 .meme-btn.selected {
   border-color: var(--accent-color);
   background: var(--accent-color);
   color: white;
+  transform: scale(1.02) translateZ(0);
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
 }
 
 .meme-emoji {
@@ -1260,21 +1337,27 @@ body {
 }
 
 .qr-canvas-display {
-  transition: all 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   max-width: 300px;
   max-height: 300px;
   min-width: 200px;
   min-height: 200px;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .qr-canvas-display:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 20px var(--shadow-medium) !important;
+  transform: scale(1.03) translateZ(0);
+  box-shadow: 0 12px 24px var(--shadow-medium) !important;
 }
 
 .qr-canvas-display.generating {
   opacity: 0.7;
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .meme-indicator {
@@ -1296,10 +1379,10 @@ body {
 
 @keyframes spin {
   from {
-    transform: rotate(0deg);
+    transform: rotate(0deg) translateZ(0);
   }
   to {
-    transform: rotate(360deg);
+    transform: rotate(360deg) translateZ(0);
   }
 }
 
@@ -1307,20 +1390,22 @@ body {
   0%,
   100% {
     opacity: 1;
+    transform: scale(1) translateZ(0);
   }
   50% {
     opacity: 0.5;
+    transform: scale(0.98) translateZ(0);
   }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(10px) translateZ(0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
   }
 }
 
@@ -3142,6 +3227,7 @@ body {
 .gpu-accelerated {
   transform: translateZ(0);
   will-change: transform;
+  backface-visibility: hidden;
 }
 
 .no-select {
@@ -3149,4 +3235,132 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+/* ========================================
+   🚀 ADVANCED PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Enable GPU acceleration for scrollable containers */
+.meme-grid,
+.media-grid,
+.suggestion-buttons {
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Optimize image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
+/* Reduce paint and layout operations */
+.main-content,
+.controls-section,
+.preview-section {
+  contain: layout style paint;
+}
+
+/* Optimize repaints for frequently updated elements */
+.qr-canvas-display,
+.meme-indicator,
+.validation-message,
+.success-state,
+.error-state {
+  contain: layout paint;
+  will-change: opacity, transform;
+}
+
+/* Smooth momentum scrolling for iOS */
+.meme-grid::-webkit-scrollbar,
+.media-grid::-webkit-scrollbar,
+.suggestion-buttons::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.meme-grid::-webkit-scrollbar-track,
+.media-grid::-webkit-scrollbar-track,
+.suggestion-buttons::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+}
+
+.meme-grid::-webkit-scrollbar-thumb,
+.media-grid::-webkit-scrollbar-thumb,
+.suggestion-buttons::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.meme-grid::-webkit-scrollbar-thumb:hover,
+.media-grid::-webkit-scrollbar-thumb:hover,
+.suggestion-buttons::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}
+
+/* Optimize font loading */
+@font-face {
+  font-family: "Inter";
+  font-display: swap;
+  src: local("Inter");
+}
+
+/* Reduce motion for users with motion sensitivity */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High refresh rate display optimization */
+@media (min-resolution: 120dpi) {
+  * {
+    -webkit-font-smoothing: subpixel-antialiased;
+    -moz-osx-font-smoothing: auto;
+  }
+}
+
+/* Dark mode optimization - reduce eye strain */
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  [data-theme="dark"] * {
+    scrollbar-color: var(--border-color) var(--bg-tertiary);
+  }
+}
+
+/* Print optimization */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .header-controls,
+  .theme-toggle,
+  .language-toggle,
+  .controls-section,
+  .meme-section,
+  .suggestions-section {
+    display: none !important;
+  }
+
+  .qr-preview {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
