@@ -287,40 +287,43 @@ const QRCodeGenerator = () => {
     }, delay);
   };
 
-  // Image collection - tất cả 31 ảnh có sẵn
-  const imageCollection = [
-    { content: img1, name: "Meme 1" },
-    { content: img2, name: "Meme 2" },
-    { content: img3, name: "Meme 3" },
-    { content: img4, name: "Meme 4" },
-    { content: img5, name: "Meme 5" },
-    { content: img6, name: "Meme 6" },
-    { content: img7, name: "Meme 7" },
-    { content: img8, name: "Meme 8" },
-    { content: img9, name: "Meme 9" },
-    { content: img10, name: "Meme 10" },
-    { content: img11, name: "Meme 11" },
-    { content: img12, name: "Meme 12" },
-    { content: img13, name: "Meme 13" },
-    { content: img14, name: "Meme 14" },
-    { content: img15, name: "Meme 15" },
-    { content: img16, name: "Meme 16" },
-    { content: img17, name: "Meme 17" },
-    { content: img18, name: "Meme 18" },
-    { content: img19, name: "Meme 19" },
-    { content: img20, name: "Meme 20" },
-    { content: img21, name: "Meme 21" },
-    { content: img22, name: "Meme 22" },
-    { content: img23, name: "Meme 23" },
-    { content: img24, name: "Meme 24" },
-    { content: img25, name: "Meme 25" },
-    { content: img26, name: "Meme 26" },
-    { content: img27, name: "Meme 27" },
-    { content: img28, name: "Meme 28" },
-    { content: img29, name: "Meme 29" },
-    { content: img30, name: "Meme 30" },
-    { content: imgMain, name: "Meme 31" },
-  ];
+  // Image collection - tất cả 31 ảnh có sẵn - Memoized for performance
+  const imageCollection = React.useMemo(
+    () => [
+      { content: img1, name: "Meme 1" },
+      { content: img2, name: "Meme 2" },
+      { content: img3, name: "Meme 3" },
+      { content: img4, name: "Meme 4" },
+      { content: img5, name: "Meme 5" },
+      { content: img6, name: "Meme 6" },
+      { content: img7, name: "Meme 7" },
+      { content: img8, name: "Meme 8" },
+      { content: img9, name: "Meme 9" },
+      { content: img10, name: "Meme 10" },
+      { content: img11, name: "Meme 11" },
+      { content: img12, name: "Meme 12" },
+      { content: img13, name: "Meme 13" },
+      { content: img14, name: "Meme 14" },
+      { content: img15, name: "Meme 15" },
+      { content: img16, name: "Meme 16" },
+      { content: img17, name: "Meme 17" },
+      { content: img18, name: "Meme 18" },
+      { content: img19, name: "Meme 19" },
+      { content: img20, name: "Meme 20" },
+      { content: img21, name: "Meme 21" },
+      { content: img22, name: "Meme 22" },
+      { content: img23, name: "Meme 23" },
+      { content: img24, name: "Meme 24" },
+      { content: img25, name: "Meme 25" },
+      { content: img26, name: "Meme 26" },
+      { content: img27, name: "Meme 27" },
+      { content: img28, name: "Meme 28" },
+      { content: img29, name: "Meme 29" },
+      { content: img30, name: "Meme 30" },
+      { content: imgMain, name: "Meme 31" },
+    ],
+    []
+  );
 
   // Function to get random image with auto-regeneration
   const getRandomImage = (autoRegenerate = false, excludeCurrent = false) => {
