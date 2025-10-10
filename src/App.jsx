@@ -5,9 +5,6 @@ import { getTranslation } from "./utils/translations";
 
 function AppContent() {
   const { isDark, language, toggleTheme, toggleLanguage } = useTheme();
-  const featureHighlights = (
-    getTranslation(language, "featuresList") || []
-  ).slice(0, 3);
   const heroBadge = language === "vi" ? "Phiên bản 2025" : "2025 Edition";
   const heroTagline =
     language === "vi"
